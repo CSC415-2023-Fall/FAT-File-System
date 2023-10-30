@@ -60,7 +60,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     vcb->first_free_block = vcb->root_directory_start_block + 32;
     vcb->free_block_count = numberOfBlocks - (1 + vcb->table_size + 32);
     vcb->last_allocated_block = vcb->first_free_block - 1;
-
+    // Save the initialized VCB to the file system
+    LBAwrite(vcb, 1, 0);
     // Set up the system's free space tracking
     FreeSpace freeSpace;
     initializeFreeSpace(&freeSpace, numberOfBlocks - vcb->root_directory_start_block);
@@ -77,8 +78,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     struct DirectoryEntry* parent = NULL;
     initRootDirectory(defaultEntries, blockSize, &freeSpace, &fatTable, vcb, name, type, &dirEntry, &parent);
 
-    // Save the initialized VCB to the file system
-    LBAwrite(vcb, 1, 0);
+    
 
     // Clean up allocated memory
     free(vcb);
