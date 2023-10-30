@@ -1,4 +1,16 @@
-
+/**
+Class:  CSC-415-03 Fall 2023
+Name:Conrad Choi
+Student ID:911679059
+GitHub Name:ChoiConrad 
+Project: File System Project
+*
+* File: freespace.c
+*
+* Description: This file contains the free space initialization and allocation functions for the freespace and the FAT. 
+* Currently, the delete and the removal of blocks is in the process. 
+*
+**/
 #include "freespace.h"
 #include <stdlib.h> 
 #include <string.h> 

@@ -1,3 +1,16 @@
+/**
+Class:  CSC-415-03 Fall 2023
+Name:Conrad Choi
+Student ID:911679059
+GitHub Name:ChoiConrad 
+Project: File System Project
+*
+* File: freespace.h
+*
+* Description: This file is the h file for freespace this doesn't contain all of the functions that will be added 
+* and some are in process.  
+*
+**/
 #ifndef freespace_H
 #define freespace_H
 
