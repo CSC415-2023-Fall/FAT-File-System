@@ -1,9 +1,9 @@
 /**************************************************************
 * Class:  CSC-415-03 Fall 2021
-* Names:Amandeep Singh 
-* Student IDs:921287533
-* GitHub Name:Amandeep-Singh-24
-* Group Name:Tryhards
+* Names: Amandeep Singh 
+* Student IDs: 921287533
+* GitHub Name: Amandeep-Singh-24
+* Group Name: Tryhards
 * Project: Basic File System
 *
 * File: fsInit.c
@@ -57,18 +57,28 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     // Define where the root directory and free blocks start
     vcb->root_directory_start_block = vcb->start_block + vcb->table_size;
-    vcb->first_free_block = vcb->root_directory_start_block + 32;
-    vcb->free_block_count = numberOfBlocks - (1 + vcb->table_size + 32);
+    vcb->first_free_block = vcb->root_directory_start_block + 11; // Using 11 as calculated blocksNeeded
     vcb->last_allocated_block = vcb->first_free_block - 1;
+    vcb->free_block_count = numberOfBlocks - (1 + vcb->table_size + 11);
     // Save the initialized VCB to the file system
     LBAwrite(vcb, 1, 0);
+
     // Set up the system's free space tracking
     FreeSpace freeSpace;
     initializeFreeSpace(&freeSpace, numberOfBlocks - vcb->root_directory_start_block);
+    vcb->first_free_block = freeSpace.startingBlock;
 
-    // Set up the system's file allocation table
-    FileAllocationTable fatTable;
-    initializeFAT(&fatTable, numberOfBlocks);
+    // Write the FreeSpace to disk, right after the VCB
+    printf("Writing FreeSpace to disk at block %d\n", 1);
+    LBAwrite(&freeSpace, sizeof(FreeSpace)/blockSize, 1); 
+
+// Set up the system's file allocation table
+        FileAllocationTable fatTable;
+initializeFAT(&fatTable, numberOfBlocks);
+    
+// Write the FAT to disk, right after the FreeSpace
+    printf("Writing FAT to disk starting at block %d\n", 2);
+    LBAwrite(fatTable.entries, fatTable.size * sizeof(FATentry)/blockSize, 2);
 
     // Set up the root directory with default values
     int defaultEntries = DEFAULT_ENTRIES; 
@@ -77,9 +87,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     struct DirectoryEntry dirEntry;
     struct DirectoryEntry* parent = NULL;
     initRootDirectory(defaultEntries, blockSize, &freeSpace, &fatTable, vcb, name, type, &dirEntry, &parent);
-
-    
-
     // Clean up allocated memory
     free(vcb);
 

@@ -41,10 +41,10 @@ struct volume_control_block {
     uint64_t block_size;
     uint64_t start_block;
     uint64_t table_size;
-    uint64_t first_free_block;
-    uint64_t free_block_count;
-    uint64_t last_allocated_block;
     uint64_t root_directory_start_block;
+    uint64_t first_free_block;
+    uint64_t last_allocated_block;
+    uint64_t free_block_count;
 };
 
 // Include headers for free space management and directory operations
