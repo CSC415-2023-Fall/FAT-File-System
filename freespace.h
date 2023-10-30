@@ -1,8 +1,11 @@
 #ifndef freespace_H
 #define freespace_H
 
+struct volume_control_block;
+
 #include <stdint.h>
 #include <sys/types.h>
+#include <fsInit.h>
 
 // Structure defining a FAT entry
 typedef struct FATentry {
@@ -30,7 +33,7 @@ void initializeFreeSpace(FreeSpace* space, uint32_t size);
 
 // Allocate a block of free space
 // Returns the starting block number on success, -1 on failure
-uint32_t allocateFreeSpace(FreeSpace* space, size_t size);
+uint32_t allocateFreeSpace(FreeSpace* space, FileAllocationTable* fatTable, size_t size, struct  volume_control_block *vcb);
 
 // Release a block of space back to the free space in progress 
 // void releaseFreeSpace(FreeSpace* space, uint32_t blockNum, size_t size);

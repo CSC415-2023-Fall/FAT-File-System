@@ -1,8 +1,8 @@
-
-#include "freespace.h"
 #include <stdlib.h> 
 #include <string.h> 
-
+#include <sys/types.h>
+#include "freespace.h"
+#include "fsInit.h"
 // Function to initialize the Free Space structure
 void initializeFreeSpace(FreeSpace* space, uint32_t size) {
     if (space != NULL) {
