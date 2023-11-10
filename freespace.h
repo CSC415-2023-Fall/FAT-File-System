@@ -11,59 +11,60 @@ Project: File System Project
 * and some are in process.  
 *
 **/
+#ifndef MY_EOF
+#define MY_EOF 0xFFFFFFFF
+#endif
 #ifndef freespace_H
 #define freespace_H
-
-struct volume_control_block;
 
 #include <stdint.h>
 #include <sys/types.h>
 #include <fsInit.h>
 
-// Structure defining a FAT entry
-typedef struct FATentry {
-    uint8_t status; // Status of the block (ex: 0 for free, 1 for allocated)
-    uint32_t next;  // Index of the next block in the file 
-} FATentry;
 
-// Structure defining the File Allocation Table (FAT)
-typedef struct FileAllocationTable {
-    FATentry* entries; // Pointer to an array of FAT entries
-    uint32_t size;     // Total number of entries in the FAT
-} FileAllocationTable;
-
-// Structure for managing free space within the file system
-typedef struct FreeSpace {// (need to add more metadata if needed )
-    size_t SIZE;             // Total size of the free space
-    uint32_t startingBlock;  // Index of the first free block
-    uint32_t freeBlocksCount;// Total number of free blocks available
-} FreeSpace;
-
-// Function prototypes for managing free space
-
-// Initialize the free space structure
-void initializeFreeSpace(FreeSpace* space, uint32_t size);
-
-// Allocate a block of free space
-// Returns the starting block number on success, -1 on failure
-uint32_t allocateFreeSpace(FreeSpace* space, FileAllocationTable* fatTable, size_t size, struct  volume_control_block *vcb);
-
-// Release a block of space back to the free space in progress 
-// void releaseFreeSpace(FreeSpace* space, uint32_t blockNum, size_t size);
-
-// Get the total count of free blocks available
-size_t getFreeSpaceCount(const FreeSpace* space);
+#define BOOTINGBLOCK 0
+#define STARTLOCATION 1
+#define OCCUPIEDBLOCK 0xFFFFFF7F
+#define FREEBLOCK 0x00000000
 
 // Function prototypes for FAT operations
 
 // Initialize the File Allocation Table
-void initializeFAT(FileAllocationTable* fatTable, uint32_t size);
+void initFAT(uint32_t numberofBlocks, uint32_t size);
 
-// Allocate a block in the FAT
-// Returns the allocated block number, or -1 if allocation fails
-uint32_t allocateBlock(FileAllocationTable* fatTable);
+void FATupdate();//updates the fat on the disk x
+
+int readFAT();// this is to take the fat from the disk onto the memory 
+
+uint32_t allocateBlocks(int numberofBlocks);//this will make new blocks in the fat 
+
+uint32_t releaseBlocks(uint32_t beginBlock); // this will release the blocks from the fat 
+
+
+
+
+void additionalBlocks (uint32_t beginBlock, int blockstoAllocate); // allocates more blocks 
+
+
+
+uint32_t getNextBlock(int currentBlock); // get next block from FAT 
+
+
+
+uint32_t findFree(); // this will find the first free block it encounters. 
+
+int isFree(uint32_t block); // given the block to see if it is free or not
+
+
+uint32_t totalFreeBlock();// returns the total free blocks 
+
+//calculates blocks from the bytes 
+int toBlocks(int bytes);
+
+uint32_t findFreeBlock(); //find the next free block 
+
 
 // Free a block in the FAT in progress
-//void freeBlock(FileAllocationTable* fatTable, uint32_t blockNum);
+void freeBlock(uint32_t blockNum);
 
 #endif // freespace_H

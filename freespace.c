@@ -16,115 +16,172 @@ Project: File System Project
 #include <sys/types.h>
 #include "freespace.h"
 #include "fsInit.h"
-// Function to initialize the Free Space structure
-void initializeFreeSpace(FreeSpace* space, uint32_t size) {
-    if (space != NULL) {
-        space->SIZE = size;                // Set the total size of free space
 
-        space->startingBlock = 0;          // Initialize the starting block to 0
-        
-        space->freeBlocksCount = size;     // Set the initial free blocks count to the total size
-    }
-}
-
-// Function to allocate free space
-// Returns the starting block number of the allocated space or -1 if allocation fails
- uint32_t allocateFreeSpace(FreeSpace* space, FileAllocationTable* fatTable, size_t size, struct volume_control_block *vcb) {
-    if (space == NULL || fatTable == NULL || vcb == NULL || size == 0) {
-        printf("Invalid parameters\n");
-        return (uint32_t)-1; // Invalid parameters
-    }
-
-    if (space->freeBlocksCount < size) {
-        printf("Not enough free space\n");
-        return (uint32_t)-1; // Not enough free space
-    }
-
-    uint32_t blockCount = 0;
-    uint32_t firstBlock = (uint32_t)-1;
-    uint32_t lastBlock = (uint32_t)-1;
-
-    for (uint32_t i = 0; i < fatTable->size && blockCount < size; ++i) {
-        if (fatTable->entries[i].status == 0) { // Block is free
-            if (firstBlock == (uint32_t)-1) { // checking for an error. SideNote: the (uint32_t) is nessisary because -1 can normally not be inserted into uint32_t variable 
-            //by keeping the uint32_t changes the -1 variable to max value uint32_t can hold 
-                firstBlock = i;
-            }
-
-            if (lastBlock != (uint32_t)-1) {
-                fatTable->entries[lastBlock].next = i;
-            }
-
-            lastBlock = i;
-            blockCount++;
-
-            fatTable->entries[i].status = 1; // Mark as allocated
-            fatTable->entries[i].next = (uint32_t)-1; // Currently, this is the last block
-        }
-    }
-
-    if (blockCount == size) {
-        space->freeBlocksCount -= size; // Update free space count
-
-        // Update VCB
-        vcb->free_block_count -= size; //updating the block count for the vcb
-        vcb->last_allocated_block = lastBlock; // updating the last block for the vcb 
-        if (firstBlock == vcb->first_free_block) { 
-            vcb->first_free_block = (lastBlock + 1) % fatTable->size;// sets the first_free_block in VCB and point to the next block 
-
-        }
-
-        return firstBlock;
-    } else {
-        //in case a failure of allocation. 
-        for (uint32_t i = firstBlock; i != (uint32_t)-1 && i < fatTable->size; i = fatTable->entries[i].next) {
-            fatTable->entries[i].status = 0;
-        }// the purpose of this is to go back and reset the blocks used back to 0 available for use. 
-        return (uint32_t)-1; // Allocation failed
-    }
-}
+uint32_t * fatTable=NULL;
+extern struct volume_control_block *vcb;
 
 
-
-// Function to get the count of free space blocks
-// Returns the number of free blocks available
-size_t getFreeSpaceCount(const FreeSpace* space) {
-    if (space != NULL) {
-        return space->freeBlocksCount;    // Return the count of free blocks
-    } else {
-        return 0;                         // Return 0 if space is NULL
-    }
-}
-
-// Function to initialize the File Allocation Table (FAT)
-void initializeFAT(FileAllocationTable* fatTable, uint32_t size) {
-    if (fatTable != NULL && size > 0) {  // Check if fatTable is not NULL and size is greater than 0
-        fatTable->entries = (FATentry*)malloc(size * sizeof(FATentry));
-        if (fatTable->entries != NULL) {
-            memset(fatTable->entries, 0, size * sizeof(FATentry)); // Initialize memory to zero
-        }
-        fatTable->size = size;  // Set the size of the FAT
-    }
-}
-
-// Function to allocate a block in the FAT
-// Returns the block number on successful allocation or -1 if allocation fails
-//doesn't contain any error checks 
-uint32_t allocateBlock(FileAllocationTable* fatTable) {
+// Initialize the File Allocation Table
+void initFAT(uint32_t numberofBlocks, uint32_t size) {
+    // Allocate memory for the FAT table
+    fatTable = (uint32_t*)malloc(numberofBlocks * sizeof(uint32_t));
     if (fatTable == NULL) {
-        return (uint32_t)-1; // Return -1 to indicate failure
+        fprintf(stderr, " init FAT: Failed to allocate memory for the FAT table.\n");
+        return;
     }
 
-    for (uint32_t i = 0; i < fatTable->size; i++) {
-        if (fatTable->entries[i].status == 0) { // Check if the block is free
+    // Initialize the FAT table entries
+    for (uint32_t i = 0; i < numberofBlocks; i++) {
+        fatTable[i] = FREEBLOCK; // Initialize all blocks as free
+    }
 
-            fatTable->entries[i].status = 1;    // Mark the block as allocated
-        
-            return i; // Return the block number
+    // Mark the boot block as occupied
+    fatTable[BOOTINGBLOCK] = OCCUPIEDBLOCK;
+
+    // Update the FAT table on disk
+    FATupdate();
+}
+
+uint32_t findFreeBlock() {
+    if (fatTable == NULL) {
+        // The FAT is not initialized.
+        fprintf(stderr, "Error: FAT is not initialized.\n");
+        return MY_EOF;  // incase if it fails 
+    }
+
+    for (uint32_t i = 0; i < vcb->table_size; i++) {
+        if (fatTable[i] == FREEBLOCK) {
+            return i;  // Free block found, return its index.
+        }
+    }
+    printf("failure to find a free block...");
+    return MY_EOF;  // No free block found, return end of the file 
+}
+
+
+void FATupdate() {
+    // Calculate the number of blocks needed for the FAT
+    uint64_t fatBlocks = toBlocks(vcb->table_size * sizeof(uint32_t));
+
+    // Write the FAT table to the disk from memory
+    if (LBAwrite(fatTable, fatBlocks, vcb->start_block) != fatBlocks) { // if fails to write 
+        fprintf(stderr, "Failed to update FAT on disk.\n");
+    } else {
+        printf("FAT successfully updated on disk.\n");
+    }
+}
+
+
+
+void freeBlock(uint32_t blockNum) {
+    if (blockNum < toBlocks(vcb->table_size * sizeof(uint32_t))) {
+        fatTable[blockNum] = FREEBLOCK; // Mark it as free
+        FATupdate(); // Save updated FAT 
+    }
+}
+
+
+
+
+int readFAT() {
+    // Calculate the number of blocks needed for the FAT
+    uint64_t fatBlocks = toBlocks(vcb->table_size * sizeof(uint32_t));
+
+    // Read the FAT table from disk into memory
+    if (LBAread(fatTable, fatBlocks, vcb->start_block) != fatBlocks) {
+        fprintf(stderr, "Failed to read FAT from disk into memory.\n");
+        return -1;
+    }
+    printf("FAT successfully read into memory.\n");
+    return 0;
+}
+
+// Function to allocate a number of blocks in the FAT
+uint32_t allocateBlocks(int numberofBlocks) {
+    if (numberofBlocks <= 0) {
+        return MY_EOF; // Invalid request
+    }
+
+    uint32_t startBlock = MY_EOF;
+    int allocatedBlocks = 0;
+
+    for (uint32_t i = 0; i < vcb->table_size && allocatedBlocks < numberofBlocks; i++) {
+        if (fatTable[i] == FREEBLOCK) {
+            if (startBlock == MY_EOF) {
+                startBlock = i; // Found the start block for allocation
+            }
+            allocatedBlocks++;
+        } else {
+            // Reset if a non-free block is encountered to ensure contiguity
+            allocatedBlocks = 0;
+            startBlock = MY_EOF;
         }
     }
 
-    return (uint32_t)-1; // Return -1 if no free blocks are available
+    if (allocatedBlocks == numberofBlocks) {
+        // Mark all found blocks as occupied
+        for (int i = 0; i < numberofBlocks; i++) {
+            
+            fatTable[startBlock + i] = OCCUPIEDBLOCK;
+
+        }
+        FATupdate(); // Update the FAT table on disk
+        return startBlock; // Return the first block of the allocated sequence
+    }
+
+    return MY_EOF; // Not enough contiguous blocks available
 }
 
-// Function voidfreeBlock(FAT* fattable, uint32_t blocknumber )
+
+uint32_t releaseBlocks(uint32_t beginBlock) {
+    if (beginBlock >= vcb->table_size) {
+        return MY_EOF; // Invalid block number
+    }
+
+    uint32_t currentBlock = beginBlock;// takes the begining block to current 
+
+    while (currentBlock != MY_EOF && fatTable[currentBlock] != FREEBLOCK) {// if the current block isnt end of file and current block on fattable isn't free block
+        uint32_t nextBlock = fatTable[currentBlock]; 
+        fatTable[currentBlock] = FREEBLOCK; // Mark as free
+        currentBlock = nextBlock; // Move to next block
+        vcb->free_block_count++; // Increment free block count in VCB
+    }
+
+    // Update the FAT table on disk
+    FATupdate();
+
+    return 0; // Successfully released the blocks
+}
+
+// Function to check if a block is free
+int isFree(uint32_t block) {
+    if (block < 0 || block >= vcb->table_size) {
+        return 0; // Invalid block number
+    }
+
+    return fatTable[block] == FREEBLOCK;
+
+
+}
+
+// Function to calculate the total number of free blocks
+uint32_t totalFreeBlock() {
+
+    uint32_t freeBlocks = 0; // creates a freeblock variable 
+
+    for (uint32_t i = 0; i < vcb->table_size; i++) {//increment throguh the fattable 
+        if (fatTable[i] == FREEBLOCK) {
+
+
+            freeBlocks++; // increments a counter 
+            //printf("test");
+        }
+    }
+    return freeBlocks;
+}
+
+// Convert bytes to blocks with respect to the file system's block size
+int toBlocks(int bytes) {
+    // Utilize the block size from the VCB
+    return (bytes + vcb->block_size - 1) / vcb->block_size;
+}
