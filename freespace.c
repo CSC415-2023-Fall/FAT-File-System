@@ -17,7 +17,7 @@ Project: File System Project
 #include "freespace.h"
 #include "fsInit.h"
 
-uint32_t * fatTable=NULL;
+uint32_t *fatTable = NULL;
 extern struct volume_control_block *vcb;
 
 
@@ -58,7 +58,6 @@ uint32_t findFreeBlock() {
     return MY_EOF;  // No free block found, return end of the file 
 }
 
-
 void FATupdate() {
     // Calculate the number of blocks needed for the FAT
     uint64_t fatBlocks = toBlocks(vcb->table_size * sizeof(uint32_t));
@@ -71,17 +70,12 @@ void FATupdate() {
     }
 }
 
-
-
 void freeBlock(uint32_t blockNum) {
     if (blockNum < toBlocks(vcb->table_size * sizeof(uint32_t))) {
         fatTable[blockNum] = FREEBLOCK; // Mark it as free
         FATupdate(); // Save updated FAT 
     }
 }
-
-
-
 
 int readFAT() {
     // Calculate the number of blocks needed for the FAT
@@ -131,7 +125,6 @@ uint32_t allocateBlocks(int numberofBlocks) {
 
     return MY_EOF; // Not enough contiguous blocks available
 }
-
 
 uint32_t releaseBlocks(uint32_t beginBlock) {
     if (beginBlock >= vcb->table_size) {
