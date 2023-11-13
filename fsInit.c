@@ -52,11 +52,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     
     // Define where the root directory and free blocks start
-    vcb->root_directory_start_block = vcb->start_block + vcb->table_size;
-    vcb->first_free_block = vcb->root_directory_start_block + 1; // Example value
-    vcb->last_allocated_block = vcb->first_free_block - 1;
-    vcb->free_block_count = numberOfBlocks - (vcb->root_directory_start_block + 1);
-
+    vcb->root_directory_start_block = vcb->start_block + vcb->table_size + 1;
+    vcb->last_allocated_block = vcb->root_directory_start_block - 1;
+    vcb->free_block_count = numberOfBlocks - (vcb->root_directory_start_block + 10); // 10 is the value of blocksNeeded
+    vcb->first_free_block = vcb->root_directory_start_block + 11; // Add 1 to 10 to get the next free block
     // Save the initialized VCB to the file system
     LBAwrite(vcb, 1, 0);
     // Initialize the FAT table
