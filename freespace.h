@@ -1,70 +1,48 @@
 /**
-Class:  CSC-415-03 Fall 2023
-Name:Conrad Choi
-Student ID:911679059
-GitHub Name:ChoiConrad 
+Class: CSC-415-03 Fall 2023
+Name: Conrad Choi
+Student ID: 911679059
+GitHub Name: ChoiConrad
 Project: File System Project
 *
 * File: freespace.h
 *
-* Description: This file is the h file for freespace this doesn't contain all of the functions that will be added 
-* and some are in process.  
-*
+* Description: Header file for managing free space in the file system.
 **/
-#ifndef MY_EOF
-#define MY_EOF 0xFFFFFFFF
-#endif
-#ifndef freespace_H
-#define freespace_H
+
+#ifndef FREESPACE_H
+#define FREESPACE_H
 
 #include <stdint.h>
 #include <sys/types.h>
-#include <fsInit.h>
-
+#include "fsInit.h"
 
 #define BOOTINGBLOCK 0
-#define STARTLOCATION 1
 #define OCCUPIEDBLOCK 0xFFFFFF7F
 #define FREEBLOCK 0x00000000
+#define END_OF_FILE 0xFFFFFFFE
 
 // Function prototypes for FAT operations
 
 // Initialize the File Allocation Table
 void initFAT(uint32_t numberofBlocks, uint32_t size);
 
-void FATupdate();//updates the fat on the disk x
+// Update the FAT on the disk
+void FATupdate();
 
-int readFAT();// this is to take the fat from the disk onto the memory 
+// Allocate blocks in the FAT
+uint32_t allocateBlocks(int numberOfBlocks, uint32_t startBlock);
 
-uint32_t allocateBlocks(int numberofBlocks);//this will make new blocks in the fat 
+// Release blocks from the FAT
+void releaseBlocks(uint32_t beginBlock);
 
-uint32_t releaseBlocks(uint32_t beginBlock); // this will release the blocks from the fat 
+// Find the next free block in the FAT
+uint32_t findNextFreeBlock();
 
-
-
-
-void additionalBlocks (uint32_t beginBlock, int blockstoAllocate); // allocates more blocks 
-
-
-
-uint32_t getNextBlock(int currentBlock); // get next block from FAT 
-
-
-
-uint32_t findFree(); // this will find the first free block it encounters. 
-
-int isFree(uint32_t block); // given the block to see if it is free or not
-
-
-uint32_t totalFreeBlock();// returns the total free blocks 
-
-//calculates blocks from the bytes 
-int toBlocks(int bytes);
-
-uint32_t findFreeBlock(); //find the next free block 
-
-
-// Free a block in the FAT in progress
+// Release a single block in the FAT
 void freeBlock(uint32_t blockNum);
 
-#endif // freespace_H
+// Calculate the number of blocks for a given size in bytes
+int toBlocks(int bytes);
+
+#endif // FREESPACE_H
