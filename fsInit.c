@@ -15,8 +15,6 @@
 **************************************************************/
 
 #include "fsInit.h"
-struct volume_control_block *vcb = NULL; // Global definition
-
 
 // Begin the file system initialization process
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
@@ -25,7 +23,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     printf("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 
     // Create a new volume control block
-    vcb = (struct volume_control_block*) malloc(blockSize);
+    struct volume_control_block* vcb = (struct volume_control_block*) malloc(blockSize);
 
     // Ensure memory was allocated successfully
     if (!vcb) {
@@ -48,26 +46,47 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     strcpy(vcb->fileSystemType, "FAT32");
     vcb->block_size = blockSize;
     vcb->start_block = 1;
-    vcb->table_size = 400;
 
-    
+    // Calculate how many clusters exist and determine the size of the FAT table
+    uint64_t cluster_count = numberOfBlocks / CLUSTER_SIZE_IN_BLOCKS;
+    uint64_t fat_table_size_in_bytes = cluster_count * 4;
+    vcb->table_size = fat_table_size_in_bytes / blockSize;
+    if (fat_table_size_in_bytes % blockSize != 0) {
+        vcb->table_size += 1;
+    }
+
     // Define where the root directory and free blocks start
-    vcb->root_directory_start_block = vcb->start_block + vcb->table_size + 1;
-    vcb->last_allocated_block = vcb->root_directory_start_block - 1;
-    vcb->free_block_count = numberOfBlocks - (vcb->root_directory_start_block + 10); // 10 is the value of blocksNeeded
-    vcb->first_free_block = vcb->root_directory_start_block + 11; // Add 1 to 10 to get the next free block
+    vcb->root_directory_start_block = vcb->start_block + vcb->table_size;
+    vcb->first_free_block = vcb->root_directory_start_block + 11; // Using 11 as calculated blocksNeeded
+    vcb->last_allocated_block = vcb->first_free_block - 1;
+    vcb->free_block_count = numberOfBlocks - (1 + vcb->table_size + 11);
     // Save the initialized VCB to the file system
     LBAwrite(vcb, 1, 0);
-    // Initialize the FAT table
-    initFAT(numberOfBlocks, blockSize); // Adjusted call
+
+    // Set up the system's free space tracking
+    FreeSpace freeSpace;
+    initializeFreeSpace(&freeSpace, numberOfBlocks - vcb->root_directory_start_block);
+    vcb->first_free_block = freeSpace.startingBlock;
+
+    // Write the FreeSpace to disk, right after the VCB
+    printf("Writing FreeSpace to disk at block %d\n", 1);
+    LBAwrite(&freeSpace, sizeof(FreeSpace)/blockSize, 1); 
+
+// Set up the system's file allocation table
+        FileAllocationTable fatTable;
+initializeFAT(&fatTable, numberOfBlocks);
+    
+// Write the FAT to disk, right after the FreeSpace
+    printf("Writing FAT to disk starting at block %d\n", 2);
+    LBAwrite(fatTable.entries, fatTable.size * sizeof(FATentry)/blockSize, 2);
 
     // Set up the root directory with default values
     int defaultEntries = DEFAULT_ENTRIES; 
     char* name = "DirEntry";
+    char* type = "DirType";
     struct DirectoryEntry dirEntry;
     struct DirectoryEntry* parent = NULL;
-    initDirectory(defaultEntries, &dirEntry, parent, name);
-
+    initRootDirectory(defaultEntries, blockSize, &freeSpace, &fatTable, vcb, name, type, &dirEntry, &parent);
     // Clean up allocated memory
     free(vcb);
 
