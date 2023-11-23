@@ -18,7 +18,7 @@
 
 // Begin the file system initialization process
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
-    
+   
     // Inform user of the initialization process
     printf("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 
@@ -27,19 +27,19 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     // Ensure memory was allocated successfully
     if (!vcb) {
+
+    int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
+  
         perror("malloc");
         return -1;
     }
-
     // Check if this volume has been initialized before
     LBAread(vcb, 1, 0);
-
     // If the volume has been initialized before, skip reinitialization
     if (vcb->magicNumber == Unique_ID) {
         free(vcb);
         return 0;
     }
-
     // Set the properties for a new volume
     vcb->magicNumber = Unique_ID;
     strcpy(vcb->volume_name, "MyVolume");
@@ -75,7 +75,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 // Set up the system's file allocation table
         FileAllocationTable fatTable;
 initializeFAT(&fatTable, numberOfBlocks);
-    
+
 // Write the FAT to disk, right after the FreeSpace
     printf("Writing FAT to disk starting at block %d\n", 2);
     LBAwrite(fatTable.entries, fatTable.size * sizeof(FATentry)/blockSize, 2);
@@ -92,7 +92,6 @@ initializeFAT(&fatTable, numberOfBlocks);
 
     return 0;
 }
-
 // Handle the system's exit routine
 void exitFileSystem() {
     
