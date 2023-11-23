@@ -41,6 +41,6 @@ struct DirectoryEntry {
 };
 
 // Declare the prototype for the root directory initialization function
-int initRootDirectory(int defaultEntries, uint64_t blockSize, FreeSpace* freeSpace, FileAllocationTable* fatTable, struct volume_control_block* vcb, char* name, char* type, struct DirectoryEntry* dirEntry, struct DirectoryEntry** parent);
+int initDirectory(int defaultEntries, struct DirectoryEntry* dirEntry, struct DirectoryEntry* parent, char* name);
 
 #endif // DIRECTORY_H
