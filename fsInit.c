@@ -30,8 +30,6 @@ struct volume_control_block *vcb = NULL; // Global definition
 
     // Ensure memory was allocated successfully
     if (!vcb) {
-
-    int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
   
         perror("malloc");
         return -1;
@@ -58,11 +56,14 @@ struct volume_control_block *vcb = NULL; // Global definition
     vcb->free_block_count = numberOfBlocks - (vcb->root_directory_start_block + 10); // 10 is the value of blocksNeeded
     vcb->first_free_block = vcb->root_directory_start_block + 11; // Add 1 to 10 to get the next free block
 
-    // Save the initialized VCB to the file system
-    LBAwrite(vcb, 1, 0);
+
     // Initialize the FAT table
     initFAT(numberOfBlocks, blockSize); // Adjusted call
 
+    FATupdate(); // updating the fat table onto disk 
+
+    // Save the initialized VCB to the file system
+    LBAwrite(vcb, 1, 0);
     // Set up the root directory with default values
     int defaultEntries = DEFAULT_ENTRIES; 
     char* name = "DirEntry";
@@ -75,7 +76,7 @@ struct volume_control_block *vcb = NULL; // Global definition
 
     return 0;
 }
-     }
+    
 // Handle the system's exit routine
 void exitFileSystem() {
     
