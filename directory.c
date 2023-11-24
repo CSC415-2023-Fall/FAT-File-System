@@ -19,7 +19,7 @@
 #include <stdlib.h>
 
 // Function to allocate a number of blocks in the FAT (from freespace.c)
-extern uint32_t allocateBlocks(int numberofBlocks);
+extern uint32_t allocateBlocks(int numberofBlocks, uint32_t startBlock);
 extern struct volume_control_block *vcb;
 
 int initDirectory(int defaultEntries, struct DirectoryEntry* dirEntry, struct DirectoryEntry* parent, char* name) {
@@ -36,9 +36,10 @@ int initDirectory(int defaultEntries, struct DirectoryEntry* dirEntry, struct Di
         return -1;
 
     }
-    // Allocate space for the directory entries on disk using FAT
-    uint32_t startBlock = allocateBlocks(blocksNeeded);
-    if (startBlock == MY_EOF) {
+// Allocate space for the directory entries on disk using FAT
+uint32_t startBlock = allocateBlocks(blocksNeeded, END_OF_FILE); // Indicate new allocation
+
+    if (startBlock == END_OF_FILE) {
         printf("Failed to allocate blocks for directory entries.\n");
         free(dir);
         return -1;
