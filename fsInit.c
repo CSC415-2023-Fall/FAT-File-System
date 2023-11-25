@@ -58,7 +58,7 @@ struct volume_control_block *vcb = NULL; // Global definition
 
 
     // Initialize the FAT table
-    initFAT(numberOfBlocks, blockSize); // Adjusted call
+    initFAT(numberOfBlocks); // Adjusted call
 
     FATupdate(); // updating the fat table onto disk 
 

@@ -13,23 +13,38 @@
 uint32_t *fatTable = NULL;
 extern struct volume_control_block *vcb;
 
-// Initialize the File Allocation Table
-void initFAT(uint32_t numberofBlocks, uint32_t size) {
+
+
+void initFAT(uint32_t numberOfBlocks) {
     // Allocate memory for the FAT table
-    fatTable = (uint32_t*)malloc(numberofBlocks * sizeof(uint32_t));
+    fatTable = (uint32_t*)malloc(numberOfBlocks * sizeof(uint32_t));
     if (fatTable == NULL) {
         fprintf(stderr, "initFAT: Failed to allocate memory for the FAT table.\n");
         return;
     }
 
-    // Initialize all blocks as free
-    for (uint32_t i = 0; i < numberofBlocks; i++) {
-        fatTable[i] = FREEBLOCK;
+    // The first block (VCB) is typically reserved and not part of the linked list
+    fatTable[0] = OCCUPIEDBLOCK;
+
+    // Initialize FAT entries to point to the next block in sequence
+    for (uint32_t i = 1; i < numberOfBlocks; i++) {
+        fatTable[i] =  i+1;
+        
+        if (i == numberOfBlocks - 1) {
+            // Mark the last block with a special value indicating the end of the list
+            fatTable[i] = END_OF_FILE;
+        }
+    
     }
 
-    // The first block (VCB) is always occupied
-    fatTable[0] = OCCUPIEDBLOCK;
+    // Update FAT table on disk
+    FATupdate();
 }
+
+
+
+
+
 
 void FATupdate() {
     // Calculate the number of blocks needed for the FAT
@@ -53,7 +68,6 @@ uint32_t findFreeBlock() {
     printf("Failure to find a free block...\n");
     return END_OF_FILE;  // No free block found
 }
-
 // Allocate a new chain or extend an existing one in the FAT
 uint32_t allocateBlocks(int numberOfBlocks, uint32_t startBlock) {
     if (numberOfBlocks <= 0) {
@@ -61,54 +75,57 @@ uint32_t allocateBlocks(int numberOfBlocks, uint32_t startBlock) {
     }
 
     uint32_t currentBlock = startBlock;
+    uint32_t previousBlock = END_OF_FILE;
+
     // If extending an existing chain, find the last block of the current chain
     if (currentBlock != END_OF_FILE) {
-        while (fatTable[currentBlock] != END_OF_FILE) {
+        while (currentBlock != END_OF_FILE) {
+            previousBlock = currentBlock;
             currentBlock = fatTable[currentBlock];
         }
-        if (fatTable[currentBlock] == END_OF_FILE) {
-            return END_OF_FILE; // No more blocks to extend
-        }
-    } else {
-        currentBlock = findNextFreeBlock(); // Allocate new chain
-        if (currentBlock == END_OF_FILE) return END_OF_FILE;
     }
 
     int blocksAllocated = (startBlock == END_OF_FILE) ? 0 : 1;
-    while (blocksAllocated < numberOfBlocks && currentBlock != END_OF_FILE) {
+
+    while (blocksAllocated < numberOfBlocks) {
         uint32_t nextBlock = findNextFreeBlock();
-        if (nextBlock == END_OF_FILE) break; // No more free blocks
-        fatTable[currentBlock] = nextBlock;
+
+        if (nextBlock == END_OF_FILE) {
+            // No more free blocks
+            if (startBlock == END_OF_FILE) {
+                return END_OF_FILE; // Failed to allocate any blocks
+            } else {
+                // Partial allocation, release allocated blocks and return END_OF_FILE
+                releaseBlocks(startBlock);
+                return END_OF_FILE;
+            }
+        }
+
+        // If extending an existing chain, update the previous block's reference
+        if (currentBlock != END_OF_FILE) {
+            fatTable[currentBlock] = nextBlock;
+        } else {
+            // If it's a new chain, update the startBlock
+            startBlock = nextBlock;
+        }
+
         currentBlock = nextBlock;
         blocksAllocated++;
-    }
-
-    if (blocksAllocated < numberOfBlocks) {
-        // Not enough blocks were allocated
-        releaseBlocks(startBlock); // Release partial allocation
-        return END_OF_FILE;
     }
 
     // Mark the end of the chain
     fatTable[currentBlock] = END_OF_FILE;
     FATupdate();
-    return startBlock == END_OF_FILE ? currentBlock : startBlock;
+
+    if (startBlock == END_OF_FILE) {
+        // If a new chain was created, return the starting block
+        return currentBlock;
+    } else {
+        // If extending an existing chain, return the original starting block
+        return startBlock;
+    }
 }
 
-
-void releaseBlocks(uint32_t beginBlock) {
-    if (beginBlock >= vcb->table_size || beginBlock == 0) {
-        return; // Invalid block number or trying to release VCB
-    }
-
-    uint32_t currentBlock = beginBlock;
-    while (currentBlock != END_OF_FILE) {
-        uint32_t nextBlock = fatTable[currentBlock];
-        fatTable[currentBlock] = FREEBLOCK;
-        currentBlock = nextBlock;
-    }
-    FATupdate();
-}
 
 
 uint32_t findNextFreeBlock() {
@@ -166,7 +183,7 @@ void appendBlocksToChain(uint32_t startBlock, int numberOfBlocks) {
     FATupdate(); // Update the FAT table on the disk.
 }
 
-void releaseBlockChain(uint32_t startBlock) {
+void releaseBlocks(uint32_t startBlock) {
     uint32_t currentBlock = startBlock;
     uint32_t nextBlock;
 

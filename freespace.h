@@ -25,7 +25,7 @@ Project: File System Project
 // Function prototypes for FAT operations
 
 // Initialize the File Allocation Table
-void initFAT(uint32_t numberofBlocks, uint32_t size);
+void initFAT(uint32_t numberofBlocks);
 
 // Update the FAT on the disk
 void FATupdate();
