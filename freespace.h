@@ -33,8 +33,12 @@ void FATupdate();
 // Allocate blocks in the FAT
 uint32_t allocateBlocks(int numberOfBlocks, uint32_t startBlock);
 
+// release a single block 
+void releaseSingleBlock(uint32_t blockNum);
+
+
 // Release blocks from the FAT
-void releaseBlocks(uint32_t beginBlock);
+void releaseMultipleBlocks(uint32_t startBlock);
 
 // Find the next free block in the FAT
 uint32_t findNextFreeBlock();

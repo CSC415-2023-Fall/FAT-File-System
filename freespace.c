@@ -58,17 +58,18 @@ void FATupdate() {
     }
 }
 
-uint32_t findFreeBlock() {
-    // Start searching for a free block after the VCB
-    for (uint32_t i = 1; i < vcb->table_size; i++) {
-        if (fatTable[i] == FREEBLOCK) {
-            return i;  // Free block found, return its index.
-        }
-    }
-    printf("Failure to find a free block...\n");
-    return END_OF_FILE;  // No free block found
-}
+// uint32_t findFreeBlock() {
+//     // Start searching for a free block after the VCB
+//     for (uint32_t i = 1; i < vcb->table_size; i++) {
+//         if (fatTable[i] == FREEBLOCK) {
+//             return i;  // Free block found, return its index.
+//         }
+//     }
+//     printf("Failure to find a free block...\n");
+//     return END_OF_FILE;  // No free block found
+// }
 // Allocate a new chain or extend an existing one in the FAT
+
 uint32_t allocateBlocks(int numberOfBlocks, uint32_t startBlock) {
     if (numberOfBlocks <= 0) {
         return END_OF_FILE; // Invalid request
@@ -96,7 +97,7 @@ uint32_t allocateBlocks(int numberOfBlocks, uint32_t startBlock) {
                 return END_OF_FILE; // Failed to allocate any blocks
             } else {
                 // Partial allocation, release allocated blocks and return END_OF_FILE
-                releaseBlocks(startBlock);
+                releaseMultipleBlocks(startBlock);
                 return END_OF_FILE;
             }
         }
@@ -146,12 +147,7 @@ uint32_t allocateSingleBlock() {
     return freeBlock;
 }
 
-void releaseSingleBlock(uint32_t blockNum) {
-    if (blockNum < vcb->table_size) {
-        fatTable[blockNum] = FREEBLOCK; // Mark the block as free.
-        FATupdate(); // Update the FAT table on the disk.
-    }
-}
+
 
 void appendBlocksToChain(uint32_t startBlock, int numberOfBlocks) {
     uint32_t currentBlock = startBlock;
@@ -183,26 +179,34 @@ void appendBlocksToChain(uint32_t startBlock, int numberOfBlocks) {
     FATupdate(); // Update the FAT table on the disk.
 }
 
-void releaseBlocks(uint32_t startBlock) {
+void releaseSingleBlock(uint32_t blockNum) { // this one releases a single block 
+
+    if (blockNum < vcb->table_size) {
+        fatTable[blockNum] = FREEBLOCK; // Mark the block as free.
+        FATupdate(); // Update the FAT table on the disk.
+    }
+}
+
+void releaseMultipleBlocks(uint32_t startBlock) { // this frees blocks function where it  takes the specified block number and releases 
     uint32_t currentBlock = startBlock;
     uint32_t nextBlock;
 
     while (currentBlock != END_OF_FILE && currentBlock < vcb->table_size) {
         nextBlock = fatTable[currentBlock];
+        fatTable[currentBlock]=FREEBLOCK;
 
-
-        releaseSingleBlock(currentBlock);
         
         currentBlock = nextBlock;
     }
+    FATupdate();
 }
 
 // Helper function to calculate FAT size
-uint64_t calculateFATSize(uint64_t numberOfBlocks, uint64_t blockSize) {
-    uint64_t fatEntries = numberOfBlocks; // One entry per block
-    uint64_t fatSizeInBytes = fatEntries * sizeof(uint32_t); // 4 bytes per FAT entry
-    return (fatSizeInBytes + blockSize - 1) / blockSize; // Round up to the nearest block
-}
+// uint64_t calculateFATSize(uint64_t numberOfBlocks, uint64_t blockSize) {
+//     uint64_t fatEntries = numberOfBlocks; // One entry per block
+//     uint64_t fatSizeInBytes = fatEntries * sizeof(uint32_t); // 4 bytes per FAT entry
+//     return (fatSizeInBytes + blockSize - 1) / blockSize; // Round up to the nearest block
+// }
 //thisi s just to calculate the number of blocks and it will round up. 
 int toBlocks(int bytes){
     int blocks = (bytes + vcb->block_size - 1) / vcb->block_size;
