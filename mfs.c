@@ -81,7 +81,7 @@ DirectoryEntry *loadDirectory(DirectoryEntry dir)
 
     //Block_size and blocks_need are used to forumalate amount of memory needed
     //for a the target directory to have
-    int block_size = 512; 
+    int block_size = vcb->block_size; 
     int blocks_need = (dir.file_size + block_size - 1) / block_size;
     DirectoryEntry *entry = malloc(blocks_need * block_size);
 
@@ -247,6 +247,7 @@ int fs_mkdir(const char *pathname, mode_t mode) {
     int blocks = (sizeof(DirectoryEntry) * 40 + 512 - 1) / 512;
     if (writeDirectoryToDisk(ppi.parent, ppi.parent[0].location, 40) != 0) {
         printf("%ld", ppi.parent[0].location);
+
         printf("Failed to write to disk\n");
         releaseSingleBlock(newDir.location); // Release the allocated block
         return -1;
@@ -303,6 +304,7 @@ int fs_mkdir(const char *pathname, mode_t mode) {
 //     }
 //     return 0; // Success
 // }
+
 
 
 //  DirectoryEntry newDir;
