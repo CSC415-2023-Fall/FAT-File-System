@@ -14,7 +14,7 @@
 *
 **************************************************************/
 #include "directory.h"
-#include "freespace.h"
+#include "mfs.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -88,3 +88,5 @@ DirectoryEntry* initDirectory(int defaultEntries, DirectoryEntry *dirEntry, Dire
     // Return the directory entry array
     return dir;
 }
+
+

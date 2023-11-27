@@ -15,6 +15,7 @@
 **************************************************************/
 
 #include "fsInit.h"
+#include "mfs.h"
 struct volume_control_block *vcb = NULL; // Global definition
 
 
@@ -67,9 +68,9 @@ struct volume_control_block *vcb = NULL; // Global definition
     // Set up the root directory with default values
     int defaultEntries = DEFAULT_ENTRIES; 
     char* name = "DirEntry";
-    DirectoryEntry* dirEntry;
+    DirectoryEntry dirEntry;
     DirectoryEntry* parent = NULL;
-    initDirectory(defaultEntries, &dirEntry, parent, name);
+    initDirectory(defaultEntries,&dirEntry, parent, name);
 
     // Clean up allocated memory
     free(vcb);
@@ -83,3 +84,4 @@ void exitFileSystem() {
     // Inform user of system shutdown
     printf("System exiting\n");
 }
+

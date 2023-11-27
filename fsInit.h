@@ -22,7 +22,6 @@
 #include <stdint.h>
 // Include low-level file system functions and main file system header
 #include "fsLow.h"
-#include "mfs.h"
 // Define constants for name length, file system type, and the unique identifier
 #define MAX_NAME_LENGTH 256
 #define FILE_SYSTEM_TYPE_LENGTH 32
@@ -50,3 +49,4 @@ struct volume_control_block {
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize);
 void exitFileSystem();
 #endif // FSINIT_H
+
