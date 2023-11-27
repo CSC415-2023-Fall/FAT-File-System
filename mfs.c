@@ -155,41 +155,60 @@ int writeDirectoryToDisk(DirectoryEntry *dir, uint32_t startBlock, int numEntrie
 }
 
 
-
-int fs_mkdir(const char *pathname, mode_t mode);
-
-
 int fs_mkdir(const char *pathname, mode_t mode) {
     if (pathname == NULL) return -1;
 
-    ppinfo* ppi;
-
-int parseResult = ParsePath((char *)pathname, &ppi);
+    ppinfo ppi;
+    int parseResult = ParsePath((char)pathname, &ppi);
     if (parseResult != 0) {
         printf(" [MKDIR] invalid path\n");
         return -1;
     }
 
-
-if (ppi->index != -1 || ppi->parent == NULL) {
-        
+    if (ppi.index != -1 || ppi.parent == NULL) {
+        printf("[MKDIR] Directory already exists or parent is NULL\n");
         return -1;
     }
 
+    // Create a new directory entry
+    DirectoryEntry newDir;
+    // Initialize newDir with appropriate values
+    // ...
 
- DirectoryEntry newDir;
- //call inti directory
- //helper function to find non used entry : loop the directory loaded in memory
- //parent directory , return an index
+    // Find an empty entry in the parent directory
+    int newIndex = findEmptyEntry(ppi.parent);
+    if (newIndex == -1) {
+        printf("[MKDIR] No space in parent directory\n");
+        return -1;
+    }
 
- //before return from mkdir call writetodisk,
- //blocks = size+(BlockSize-1)/Blocksize 
- //first parameter
- //second is 1 
- //
- //can create another function called Next Block, first block ->>> startBlock
+    // Update the parent directory with the new directory entry
+    ppi.parent[newIndex] = newDir;
 
+    // Write the updated parent directory back to disk
+    int blocks = (sizeof(DirectoryEntry) * 40 + 512 - 1) / 512;
+    if (writeDirectoryToDisk(ppi.parent, ppi.parent[0].location, 40) != 0) {
+        printf("[MKDIR] Failed to write to disk\n");
+        return -1;
+    }
 
+    return 0; // Success
 }
 
+
+
+//  DirectoryEntry newDir;
+//  //call inti directory
+//  //helper function to find non used entry : loop the directory loaded in memory
+//  //parent directory , return an index
+
+//  //before return from mkdir call writetodisk,
+//  //blocks = size+(BlockSize-1)/Blocksize 
+//  //first parameter
+//  //second is 1 
+//  //
+//  //can create another function called Next Block, first block ->>> startBlock
+
+
+// }
 
