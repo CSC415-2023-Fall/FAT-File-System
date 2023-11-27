@@ -17,8 +17,8 @@
 #include "fsInit.h"
 #include "mfs.h"
 struct volume_control_block *vcb = NULL; // Global definition
-
-
+extern DirectoryEntry *rootDir; 
+extern DirectoryEntry *cwd;
 // Begin the file system initialization process
      int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
   
@@ -71,7 +71,7 @@ struct volume_control_block *vcb = NULL; // Global definition
     DirectoryEntry dirEntry;
     DirectoryEntry* parent = NULL;
     initDirectory(defaultEntries,&dirEntry, parent, name);
-
+    loadRootDirectory();
     // Clean up allocated memory
     free(vcb);
 

@@ -65,13 +65,8 @@ typedef struct  {
     int index;                // Index to the parent of the last element
 } ppinfo;
 
-
-
  extern DirectoryEntry *rootDir;
  extern DirectoryEntry *cwd;
-
-
-
 
 // Key directory functions
 int fs_mkdir(const char *pathname, mode_t mode);
@@ -108,5 +103,4 @@ int fs_stat(const char *path, struct fs_stat *buf);
 
 
 #endif
-
 

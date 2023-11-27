@@ -47,5 +47,6 @@ typedef struct {
 
 // Declare the prototype for the root directory initialization function
 DirectoryEntry* initDirectory(int defaultEntries,  DirectoryEntry* dirEntry,  DirectoryEntry* parent, char* name);
+int loadRootDirectory();
 
 #endif // DIRECTORY_H

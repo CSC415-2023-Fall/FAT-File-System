@@ -23,6 +23,44 @@
 // Function to allocate a number of blocks in the FAT (from freespace.c)
 extern uint32_t allocateBlocks(int numberofBlocks);
 extern struct volume_control_block *vcb;
+DirectoryEntry *rootDir = NULL;
+DirectoryEntry *cwd = NULL;
+
+
+int loadRootDirectory() {
+    int minBytesNeeded = 16 * sizeof(DirectoryEntry);
+    int blocksNeeded = (minBytesNeeded + 512 - 1) / 512;
+    int mallocBytes = blocksNeeded * 512;
+
+    int startBlock = 402;
+    int blockSize = 512;
+    rootDir = (DirectoryEntry *)malloc(mallocBytes);
+
+    if (rootDir == NULL) {
+        fprintf(stderr, "[LOAD ROOT] Failed to allocate memory for the root directory\n");
+        return -1;
+    }
+
+    printf("[LOAD ROOT] Start root block: %d\n", startBlock);
+    printf("[LOAD ROOT] Number of blocks for root: %d\n", blocksNeeded);
+
+    // Read the root directory from the disk
+    if (readDirectoryFromDisk(startBlock, rootDir, 10) != 0) {
+        fprintf(stderr, "[LOAD ROOT] Failed to load root directory from disk\n");
+        free(rootDir);
+        return -1;
+    }
+
+    // Set the current working directory to root
+    cwd = strdup("/");  // Ensure cwd is dynamically allocated
+    if (cwd == NULL) {
+        fprintf(stderr, "[LOAD ROOT] Failed to allocate memory for cwd\n");
+        free(rootDir);
+        return -1;
+    }
+
+    return 0;  // Successful loading of root directory
+}
 
 DirectoryEntry* initDirectory(int defaultEntries, DirectoryEntry *dirEntry, DirectoryEntry *parent, char* name) {
     // Calculate bytes needed based on the number of default entries and their size
@@ -67,11 +105,11 @@ DirectoryEntry* initDirectory(int defaultEntries, DirectoryEntry *dirEntry, Dire
 
     // Initialize other directory entries
     for (int i = 2; i < defaultEntries; i++) {
-        strcpy(dir[i].file_name, name);
-        dir[i].file_size = 0;  // Size is 0 for empty files/directories
-        dir[i].ctime = dir[i].mtime = dir[i].atime = time(NULL);
-        dir[i].location = 0;   // Location will be set later when allocated
-    }
+    dir[i].file_name[0] = '\0'; // Set the file name to an empty string
+    dir[i].file_size = 0;       // Size is 0 for empty files/directories
+    dir[i].ctime = dir[i].mtime = dir[i].atime = time(NULL);
+    dir[i].location = 0;        // Location will be set later when allocated
+}
 
     // Update location for the directory entries
     for (int i = 0; i < defaultEntries; i++) {
