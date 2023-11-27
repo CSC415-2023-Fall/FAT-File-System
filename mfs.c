@@ -156,44 +156,70 @@ int writeDirectoryToDisk(DirectoryEntry *dir, uint32_t startBlock, int numEntrie
 
 
 int fs_mkdir(const char *pathname, mode_t mode) {
-    if (pathname == NULL) return -1;
+    if (pathname == NULL) {
+        printf(" Pathname is NULL\n");
+        return -1;
+    }
 
     ppinfo ppi;
-    int parseResult = ParsePath((char)pathname, &ppi);
+    int parseResult = ParsePath((char *)pathname, &ppi);
     if (parseResult != 0) {
-        printf(" [MKDIR] invalid path\n");
+        printf("Invalid path\n");
         return -1;
     }
 
     if (ppi.index != -1 || ppi.parent == NULL) {
-        printf("[MKDIR] Directory already exists or parent is NULL\n");
+        printf("Directory already exists or parent is NULL\n");
         return -1;
     }
 
-    // Create a new directory entry
+    
     DirectoryEntry newDir;
-    // Initialize newDir with appropriate values
-    // ...
+    strncpy(newDir.file_name, ppi.lastElement, MAX_FILE_NAME_LENGTH);
+    newDir.file_name[MAX_FILE_NAME_LENGTH - 1] = '\0'; 
+    newDir.file_size = 0; 
+    newDir.isDirectory = 1; 
+    newDir.location = findNextFreeBlock(); 
+    if (newDir.location == (uint64_t)-1) {
+        printf("[MKDIR] No free location available\n");
+        return -1;
+    }
 
-    // Find an empty entry in the parent directory
+    
+    if (allocateBlocks(1, newDir.location) == (uint32_t)-1) {
+        printf("Failed to allocate block\n");
+        return -1;
+    }
+
+    time_t currentTime = time(NULL);
+    newDir.mtime = currentTime; 
+    newDir.atime = currentTime; 
+    newDir.ctime = currentTime; 
+
+    //made this helper func
     int newIndex = findEmptyEntry(ppi.parent);
     if (newIndex == -1) {
-        printf("[MKDIR] No space in parent directory\n");
+        printf("No space in parent directory\n");
+        releaseSingleBlock(newDir.location); 
         return -1;
     }
 
-    // Update the parent directory with the new directory entry
+    
     ppi.parent[newIndex] = newDir;
 
-    // Write the updated parent directory back to disk
-    int blocks = (sizeof(DirectoryEntry) * 40 + 512 - 1) / 512;
-    if (writeDirectoryToDisk(ppi.parent, ppi.parent[0].location, 40) != 0) {
-        printf("[MKDIR] Failed to write to disk\n");
+    
+    int blocks = (sizeof(DirectoryEntry) * NUM_ENTRIES + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    if (writeDirectoryToDisk(ppi.parent, ppi.parent[0].location, NUM_ENTRIES) != 0) {
+        printf("Failed to write to disk\n");
+        releaseSingleBlock(newDir.location); // Release the allocated block
         return -1;
     }
 
-    return 0; // Success
+    FATupdate(); //this func is from freespace 
+
+    return 0; 
 }
+
 
 
 
