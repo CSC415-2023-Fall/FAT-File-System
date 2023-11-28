@@ -23,6 +23,7 @@
 // Function to allocate a number of blocks in the FAT (from freespace.c)
 extern uint32_t allocateBlocks(int numberofBlocks);
 extern struct volume_control_block *vcb;
+extern struct FATEntry *fatTable;
 DirectoryEntry *rootDir = NULL;
 DirectoryEntry *cwd = NULL;
 

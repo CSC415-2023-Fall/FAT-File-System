@@ -13,36 +13,35 @@
 * This file is where you will start and initialize your system
 *
 **************************************************************/
-
 #include "fsInit.h"
 #include "mfs.h"
+
 struct volume_control_block *vcb = NULL; // Global definition
 extern DirectoryEntry *rootDir; 
 extern DirectoryEntry *cwd;
-// Begin the file system initialization process
-     int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
-  
-    
-    // Inform user of the initialization process
+
+int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     printf("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 
-    // Create a new volume control block
+    // Allocate space for VCB
     vcb = (struct volume_control_block*) malloc(blockSize);
-
-    // Ensure memory was allocated successfully
     if (!vcb) {
-  
         perror("malloc");
         return -1;
     }
-    // Check if this volume has been initialized before
+
+    // Attempt to read existing VCB from disk
     LBAread(vcb, 1, 0);
-    // If the volume has been initialized before, skip reinitialization
+
+    // Check if VCB has been initialized before
     if (vcb->magicNumber == Unique_ID) {
-        free(vcb);
-        return 0;
+        // VCB already initialized, proceed to load root directory
+        printf("initFileSystem: VCB already initialized, loading root directory\n");
+        loadRootDirectory();
+        return 0; // Return here to skip reinitialization
     }
-    // Set the properties for a new volume
+
+    // VCB not initialized, proceed with initialization
     vcb->magicNumber = Unique_ID;
     strcpy(vcb->volume_name, "MyVolume");
     strcpy(vcb->fileSystemType, "FAT32");
@@ -50,38 +49,28 @@ extern DirectoryEntry *cwd;
     vcb->start_block = 1;
     vcb->table_size = 400;
 
-
-    // Define where the root directory and free blocks start
     vcb->root_directory_start_block = vcb->start_block + vcb->table_size + 1;
     vcb->last_allocated_block = vcb->root_directory_start_block - 1;
-    vcb->free_block_count = numberOfBlocks - (vcb->root_directory_start_block + 10); // 10 is the value of blocksNeeded
-    vcb->first_free_block = vcb->root_directory_start_block + 11; // Add 1 to 10 to get the next free block
+    vcb->free_block_count = numberOfBlocks - (vcb->root_directory_start_block + 10); 
+    vcb->first_free_block = vcb->root_directory_start_block + 11; 
 
+    initFAT(numberOfBlocks); // Initialize the FAT table
 
-    // Initialize the FAT table
-    initFAT(numberOfBlocks); // Adjusted call
+    LBAwrite(vcb, 1, 0); // Save the initialized VCB to the file system
 
-    FATupdate(); // updating the fat table onto disk 
-
-    // Save the initialized VCB to the file system
-    LBAwrite(vcb, 1, 0);
-    // Set up the root directory with default values
     int defaultEntries = DEFAULT_ENTRIES; 
     char* name = "DirEntry";
     DirectoryEntry dirEntry;
     DirectoryEntry* parent = NULL;
-    initDirectory(defaultEntries,&dirEntry, parent, name);
     loadRootDirectory();
-    // Clean up allocated memory
-    free(vcb);
+    initDirectory(defaultEntries, &dirEntry, parent, name);
 
+    // Do not free vcb here as it is needed throughout the file system operation
     return 0;
 }
-    
-// Handle the system's exit routine
-void exitFileSystem() {
-    
-    // Inform user of system shutdown
-    printf("System exiting\n");
-}
 
+void exitFileSystem() {
+    printf("System exiting\n");
+    free(vcb); // Free VCB during system shutdown
+    vcb = NULL;
+}

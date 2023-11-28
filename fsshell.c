@@ -36,15 +36,15 @@
 #define DIRMAX_LEN		4096
 
 /****   SET THESE TO 1 WHEN READY TO TEST THAT COMMAND ****/
-#define CMDLS_ON	0
+#define CMDLS_ON	1
 #define CMDCP_ON	0
 #define CMDMV_ON	0
 #define CMDMD_ON	1
-#define CMDRM_ON	0
+#define CMDRM_ON	1
 #define CMDCP2L_ON	0
 #define CMDCP2FS_ON	0
-#define CMDCD_ON	0
-#define CMDPWD_ON	0
+#define CMDCD_ON	1
+#define CMDPWD_ON	1
 #define CMDTOUCH_ON	0
 #define CMDCAT_ON	0
 
@@ -128,6 +128,10 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 ****************************************************/
 int cmd_ls (int argcnt, char *argvec[])
 	{
+			 printf("[cmd_ls] Called with %d arguments\n", argcnt);
+    for (int i = 0; i < argcnt; i++) {
+        printf("[cmd_ls] Argument %d: %s\n", i, argvec[i]);
+    }
 #if (CMDLS_ON == 1)				
 	int option_index;
 	int c;
@@ -534,6 +538,7 @@ int cmd_cd (int argcnt, char *argvec[])
 		return (ret);
 		}			
 #endif
+	printf("Success\n");
 	return 0;
 	}
 	
