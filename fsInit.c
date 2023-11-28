@@ -62,9 +62,9 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     char* name = "DirEntry";
     DirectoryEntry dirEntry;
     DirectoryEntry* parent = NULL;
-    loadRootDirectory();
+    
     initDirectory(defaultEntries, &dirEntry, parent, name);
-
+    loadRootDirectory();
     // Do not free vcb here as it is needed throughout the file system operation
     return 0;
 }

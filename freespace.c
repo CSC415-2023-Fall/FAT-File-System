@@ -126,7 +126,7 @@ uint32_t findNextFreeBlock() {
         printf("FAT Entry %u: status = %d, nextBlock = %u\n", i, fatTable[i].status, fatTable[i].nextBlock);
     }
 
-    for (uint32_t i = 0; i < vcb->table_size; i++) {
+    for (uint32_t i = 402; i < 19531; i++) {
         if (fatTable[i].status == FREEBLOCK) {
             return i; // Found a free block.
         }

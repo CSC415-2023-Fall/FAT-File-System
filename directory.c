@@ -79,6 +79,7 @@ DirectoryEntry* initDirectory(int defaultEntries, DirectoryEntry *dirEntry, Dire
 
     // Allocate space for the directory entries on disk using FAT
     uint32_t startBlock = allocateBlocks(blocksNeeded);
+    printf("Startblock: %d\n", startBlock);
     if (startBlock == END_OF_FILE) {
         printf("Failed to allocate blocks for directory entries.\n");
         return NULL;  // Return NULL to indicate failure
@@ -113,12 +114,12 @@ DirectoryEntry* initDirectory(int defaultEntries, DirectoryEntry *dirEntry, Dire
 }
 
     // Update location for the directory entries
-    for (int i = 0; i < defaultEntries; i++) {
-        dir[i].location = startBlock;
-    }
+   // for (int i = 0; i < defaultEntries; i++) {
+   //     dir[i].location = startBlock;
+   // }
 
     // Write the directory entries to disk
-    uint64_t blocksWritten = LBAwrite((unsigned char*) dir, blocksNeeded, vcb->root_directory_start_block);
+    uint64_t blocksWritten = LBAwrite((unsigned char*) dir, blocksNeeded, /*vcb->root_directory_start_block*/ startBlock);
     if (blocksWritten != blocksNeeded) {
         printf("Failed to write all directory blocks to disk.\n");
         return NULL;  // Return NULL to indicate failure

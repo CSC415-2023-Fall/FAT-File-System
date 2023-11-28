@@ -19,7 +19,10 @@ int IsADirectory(DirectoryEntry *dirEntry) {
     return dirEntry->isDirectory == 1;
 }
 
-int writeDirectoryToDisk(DirectoryEntry *dir, uint32_t startBlock, int numEntries) {
+int writeDirectoryToDisk(DirectoryEntry *dir/*, uint32_t startBlock, int numEntries*/) {
+    uint32_t startBlock;
+    startBlock = dir[0].location;
+    int numEntries = dir[0].file_size / sizeof(DirectoryEntry);
     printf("[writeDirectoryToDisk] Called with startBlock: %u, numEntries: %d\n", startBlock, numEntries);
     if (dir == NULL) {
         printf("[writeDirectoryToDisk] dir is NULL\n");
@@ -27,7 +30,7 @@ int writeDirectoryToDisk(DirectoryEntry *dir, uint32_t startBlock, int numEntrie
     }
 
     int blockSize = vcb->block_size;
-    int dirSize = numEntries * sizeof(DirectoryEntry);
+    int dirSize = dir[0].file_size;
     int blocksToWrite = (dirSize + blockSize - 1) / blockSize;
     printf("[writeDirectoryToDisk] BlockSize: %d, dirSize: %d, blocksToWrite: %d\n", blockSize, dirSize, blocksToWrite);
     uint64_t blocksWritten = LBAwrite((unsigned char*) dir, blocksToWrite, startBlock);
@@ -247,7 +250,7 @@ int fs_mkdir(const char *pathname, mode_t mode) {
 
     // Write the updated parent directory back to disk
     printf("[MKDIR] Writing updated parent directory to disk\n");
-    if (writeDirectoryToDisk(ppi.parent, ppi.parent[0].location, 10) != 0) {
+    if (writeDirectoryToDisk(ppi.parent /*, ppi.parent[0].location, 10*/) != 0) {
         printf("[MKDIR] Error: Failed to write to disk\n");
         // Release the allocated blocks if necessary
         // releaseSingleBlock(newDir->location);  // Uncomment if needed
@@ -461,7 +464,7 @@ int fs_delete(char *filename) {
 
     // Write the updated directory back to the disk
     int blocksToWrite = (vcb->block_size + sizeof(DirectoryEntry) * MAXDIRENTRIES - 1) / vcb->block_size;
-    if (writeDirectoryToDisk(ppi.parent, ppi.parent[0].location, blocksToWrite) != 0) {
+    if (writeDirectoryToDisk(ppi.parent/*, ppi.parent[0].location, blocksToWrite*/) != 0) {
         printf("Error: Failed to update directory on disk\n");
         return -1;
     }
@@ -514,7 +517,7 @@ int fs_rmdir(const char *pathname) {
     releaseMultipleBlocks(ppi.parent[ppi.index].location);
 
     // Write the updated parent directory back to disk
-    if (writeDirectoryToDisk(ppi.parent, ppi.parent->location, MAXDIRENTRIES) != 0) {
+    if (writeDirectoryToDisk(ppi.parent/*, ppi.parent->location, MAXDIRENTRIES*/) != 0) {
         printf("[RMDIR] Error: Failed to write updated parent directory to disk\n");
         return -1;
     }
