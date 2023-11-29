@@ -4,6 +4,9 @@
 #include "directory.h"
 #include "fsInit.h"
 #include "mfs.h"
+#define MAX_PATH_LENGTH 256
+char currentPath[MAX_PATH_LENGTH] = "/"; 
+
 extern struct volume_control_block *vcb;
 // extern struct FATEntry *fatTable;
 
@@ -17,6 +20,7 @@ int IsADirectory(DirectoryEntry *dirEntry) {
     // Check if the entry is a directory
     printf("[IsADirectory] isDirectory value: %d\n", dirEntry->isDirectory);
     return dirEntry->isDirectory == 1;
+    //return 1;
 }
 
 int writeDirectoryToDisk(DirectoryEntry *dir/*, uint32_t startBlock, int numEntries*/) {
@@ -102,12 +106,20 @@ DirectoryEntry *loadDirectory(DirectoryEntry dir) {
 }
 
 int ParsePath(char *path, ppinfo *ppi) {
+    
     printf("[ParsePath] Called with path: '%s'\n", path);
     if (path == NULL || ppi == NULL) {
         printf("[ParsePath] path or ppi is NULL\n");
         return -1; 
     }
     printf("im in parse");
+
+      if (path[0] != '/') {
+        char *newPath = malloc(strlen(path) + 2); // Allocate memory for new path with '/' and null-terminator
+        if (newPath == NULL) return -4; // Allocation failed
+        sprintf(newPath, "/%s", path); // Prepend '/' to the path
+        path = newPath; // Update the original path pointer
+    }
     if (path == NULL || ppi == NULL) return -1; 
 
     char *pathCopy = strdup(path); 
@@ -262,20 +274,32 @@ int fs_mkdir(const char *pathname, mode_t mode) {
 }
 
 int fs_isDir(char *pathname) {
+    printf("remove reached here\n");
     if (pathname == NULL) {
         printf("[IS DIR] Pathname is NULL\n");
         return 0; // 0 indicates not a directory
     }
 
     ppinfo ppi;
-    if (ParsePath(pathname, &ppi) != 0) {
-        printf("[IS DIR] ParsePath error for %s\n", pathname);
-        return 0; 
-    }
+    
+    // if (ParsePath(pathname, &ppi) != 0) {
+    //     printf("[IS DIR] ParsePath error for %s\n", pathname);
+    //     return 0; 
+    // }
 
     if (ppi.parent == NULL || ppi.index == -1) {
         printf("[IS DIR] %s does not exist or not a valid entry\n", pathname);
         return 0; 
+
+         printf("[IS DIR] ppi.parent: %p\n", (void*)ppi.parent); // Print the address of the parent
+    if (ppi.parent != NULL) {
+        // If parent is not NULL, print details of the parent directory entry
+        printf("[IS DIR] ppi.parent details - file_name: %s, isDirectory: %d\n", ppi.parent->file_name, ppi.parent->isDirectory);
+    }
+
+    printf("[IS DIR] ppi.lastElement: %s\n", ppi.lastElement); // Print the last element of the path
+    printf("[IS DIR] ppi.index: %d\n", ppi.index); // Print the index of the parent of the last element
+
 
     if (IsADirectory(&ppi.parent[ppi.index])) {
         return 1; 
@@ -308,8 +332,7 @@ fdDir *fs_opendir(const char *pathname) {
 
     dirStream->directory = loadDirectory(*ppi.parent);
     dirStream->dirEntryPosition = 0;
-    dirStream->d_reclen = MAXDIRENTRIES;  // Assuming MAXDIRENTRIES is the max number of entries in a directory
-
+    dirStream->d_reclen = MAXDIRENTRIES;  
     return dirStream;
 }
 
@@ -349,6 +372,7 @@ int fs_closedir(fdDir *dirp) {
 
 
 int fs_isFile(char *pathname) {
+    printf("is_file is reached by the remove function\n");
     if (pathname == NULL) {
         printf("[IS FILE] Pathname is NULL\n");
         return 0;  // 0 indicates not a file
@@ -373,39 +397,134 @@ int fs_isFile(char *pathname) {
 }
 
 char* fs_getcwd(char* buf, size_t size) {
-    if (cwd == NULL) {
+    if (currentPath == NULL) {
         return NULL;
     }
 
-    // Check if provided buffer is large enough
-    if (size < strlen(cwd->file_name) + 1) {
+    // Check if the provided buffer is large enough for the current path
+    if (size < strlen(currentPath) + 1) {
         return NULL;
     }
 
-    strncpy(buf, cwd->file_name, size);
+    // Copy the current path to the provided buffer
+    strncpy(buf, currentPath, size);
+    buf[size - 1] = '\0'; // Ensure null-termination
     return buf;
 }
-
 int fs_setcwd(char* path) {
     if (path == NULL) {
         return -1;
     }
 
-    // Use your path parsing function to find the directory entry
     ppinfo ppi;
     if (ParsePath(path, &ppi) != 0 || ppi.parent == NULL || ppi.index == -1) {
         return -1; // Path parsing failed or path does not exist
     }
 
-    // Check if the path is indeed a directory
     if (!IsADirectory(&ppi.parent[ppi.index])) {
         return -1; // Not a directory
     }
 
-    cwd = &ppi.parent[ppi.index]; // Set the CWD to the new directory
-    printf("INSIDE CWD\n");
+    if (path[0] == '/') {
+        strncpy(currentPath, path, MAX_PATH_LENGTH);
+        currentPath[MAX_PATH_LENGTH - 1] = '\0'; // Ensure null-termination
+    } else {
+        size_t currentLength = strlen(currentPath);
+        if (currentPath[currentLength - 1] != '/') {
+            // Add a slash if the current path doesn't end with one
+            strcat(currentPath, "/");
+            currentLength++;
+        }
+        if (currentLength + strlen(path) < MAX_PATH_LENGTH) {
+            strcat(currentPath, path);
+        } 
+    }
+
+    
+
+    cwd = &ppi.parent[ppi.index]; // Set the CWD
+    
     return 0;
 }
+
+// DirectoryEntry* getChildDirectory(DirectoryEntry *parent, char *childName) {
+//     if (parent == NULL || childName == NULL) {
+//         return NULL;
+//     }
+
+//     int index = FindEntryInDir(parent, childName);
+//     if (index == -1) {
+//         return NULL; // Child directory not found
+//     }
+
+//     return &parent[index]; // Return the child directory
+// }
+
+
+// DirectoryEntry* getParentDirectory(ppinfo *ppi) {
+//     if (ppi == NULL || ppi->parent == NULL) {
+//         return NULL; // Invalid input or root directory
+//     }
+
+//     return ppi->parent; // Return the parent directory
+// }
+
+
+// int fs_setcwd(char* path) {
+//     if (path == NULL) {
+//         return -1;
+//     }
+
+//     DirectoryEntry *targetDir;
+//     char *nextDirName;
+//     char tempPath[MAX_PATH_LENGTH];
+
+//       ppinfo ppi;
+//     if (ParsePath(path, &ppi) != 0 || ppi.parent == NULL || ppi.index == -1) {
+//         return -1; // Path parsing failed or path does not exist
+//    }
+
+//     if (path[0] == '/') {
+//         // Absolute path: start from the root
+//         targetDir = rootDir;
+//         strcpy(tempPath, "/");
+//     } else {
+//         // Relative path: start from the current working directory
+//         targetDir = cwd;
+//         strcpy(tempPath, currentPath);
+//     }
+
+//     // Tokenize the path and traverse directories
+//     nextDirName = strtok(path, "/");
+//     while (nextDirName != NULL) {
+//         if (strcmp(nextDirName, "..") == 0) {
+//             // Move up to the parent directory
+//             targetDir = getParentDirectory(&ppi);
+//         } else if (strcmp(nextDirName, ".") != 0) {
+//             // Move into the child directory
+//             targetDir = getChildDirectory(targetDir, nextDirName);
+//             if (targetDir == NULL) {
+//                 return -1; // Directory not found
+//             }
+//         }
+
+//         // Update tempPath accordingly
+//         // (You'll need to handle the concatenation and length check here)
+
+//         nextDirName = strtok(NULL, "/");
+//     }
+
+//     // Update cwd and currentPath
+//     cwd = targetDir;
+//     strncpy(currentPath, tempPath, MAX_PATH_LENGTH);
+//     currentPath[MAX_PATH_LENGTH - 1] = '\0'; // Ensure null-termination
+
+//     return 0;
+// }
+
+// Implement `getParentDirectory` and `getChildDirectory` based on your filesystem structure.
+
+
 
 int fs_stat(const char* path, struct fs_stat* buf) {
     if (path == NULL || buf == NULL) {
@@ -449,7 +568,7 @@ int fs_delete(char *filename) {
         return -1;
     }
 
-    // Check if file is found in the directory
+    //Check if file is found in the directory
     if (ppi.index == -1 || ppi.parent == NULL) {
         printf("Error: File not found\n");
         return -1;
@@ -463,7 +582,7 @@ int fs_delete(char *filename) {
     strcpy(ppi.parent[ppi.index].file_name, "");
 
     // Write the updated directory back to the disk
-    int blocksToWrite = (vcb->block_size + sizeof(DirectoryEntry) * MAXDIRENTRIES - 1) / vcb->block_size;
+   // int blocksToWrite = (vcb->block_size + sizeof(DirectoryEntry) * MAXDIRENTRIES - 1) / vcb->block_size;
     if (writeDirectoryToDisk(ppi.parent/*, ppi.parent[0].location, blocksToWrite*/) != 0) {
         printf("Error: Failed to update directory on disk\n");
         return -1;
@@ -480,15 +599,28 @@ int fs_rmdir(const char *pathname) {
         return -1;
     }
 
-    // Parse the path to get directory information
-    ppinfo ppi;
+     // Parse the path to get directory information
+     ppinfo ppi;
     int parseResult = ParsePath(pathname, &ppi);
+    // char fullPath[MAX_PATH_LENGTH];
+    // if (pathname[0] != '/') {
+    //     // For relative paths, prepend the currentPath
+    //     snprintf(fullPath, MAX_PATH_LENGTH, "%s/%s", currentPath, pathname);
+    // } else {
+    //     // For absolute paths, use the path as is
+    //     strncpy(fullPath, pathname, MAX_PATH_LENGTH);
+    // }
+    // fullPath[MAX_PATH_LENGTH - 1] = '\0'; 
+
+    // Use fullPath in ParsePath
+    //ppinfo ppi;
+    //int parseResult = (ParsePath(fullPath, &ppi));
     if (parseResult != 0) {
         printf("[RMDIR] Error: ParsePath failed\n");
         return -1;
     }
 
-    // Check if the directory exists and is a directory
+    //Check if the directory exists and is a directory
     if (ppi.index == -1 || ppi.parent == NULL || !IsADirectory(&ppi.parent[ppi.index])) {
         printf("[RMDIR] Error: %s is not a valid directory\n", pathname);
         return -1;
@@ -501,13 +633,13 @@ int fs_rmdir(const char *pathname) {
         return -1;
     }
     
-    for (int i = 0; i < MAXDIRENTRIES; i++) {
-        if (strcmp(dir[i].file_name, "") != 0) {
-            printf("[RMDIR] Error: Directory is not empty\n");
-            free(dir);
-            return -1;
-        }
-    }
+    // for (int i = 0; i < MAXDIRENTRIES; i++) {
+    //     if (strcmp(dir[i].file_name, "") != 0) {
+    //         printf("[RMDIR] Error: Directory is not empty\n");
+    //         free(dir);
+    //         return -1;
+    //     }
+    // }
     free(dir);
 
     // Remove the directory entry from its parent
@@ -520,6 +652,22 @@ int fs_rmdir(const char *pathname) {
     if (writeDirectoryToDisk(ppi.parent/*, ppi.parent->location, MAXDIRENTRIES*/) != 0) {
         printf("[RMDIR] Error: Failed to write updated parent directory to disk\n");
         return -1;
+    }
+
+
+
+    char removedDirPath[MAX_PATH_LENGTH];
+    strcpy(removedDirPath, pathname);
+    if (strstr(currentPath, removedDirPath) == currentPath) {
+        // The removed directory is part of the current path
+        // Find the parent path of the removed directory
+        char *lastSlash = strrchr(currentPath, '/');
+        if (lastSlash != NULL) {
+            *lastSlash = '\0'; 
+        }
+        if (strlen(currentPath) == 0) {
+            strcpy(currentPath, "/"); 
+        }
     }
 
     printf("[RMDIR] Directory %s removed successfully\n", pathname);
