@@ -98,7 +98,7 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 	
 	struct fs_diriteminfo * di;
 	struct fs_stat statbuf;
-	
+	printf("[fs_readdir] Called\n");
 	di = fs_readdir (dirp);
 	printf("\n");
 	while (di != NULL) 

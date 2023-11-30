@@ -1,14 +1,14 @@
-// /**
-// Class: CSC-415-03 Fall 2023
-// Name: Conrad Choi
-// Student ID: 911679059
-// GitHub Name: ChoiConrad
-// Project: File System Project
-// *
-// * File: freespace.h
-// *
-// * Description: Header file for managing free space in the file system.
-// **/
+/**
+Class: CSC-415-03 Fall 2023
+Name: Conrad Choi
+Student ID: 911679059
+GitHub Name: ChoiConrad
+Project: File System Project
+*
+* File: freespace.h
+*
+* Description: Header file for managing free space in the file system.
+**/
 #ifndef FREESPACE_H
 #define FREESPACE_H
 #include <stdint.h>
