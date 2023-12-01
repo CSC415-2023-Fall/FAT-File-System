@@ -25,10 +25,12 @@ extern uint32_t allocateBlocks(int numberofBlocks);
 extern struct volume_control_block *vcb;
 extern struct FATEntry *fatTable;
 DirectoryEntry *rootDir = NULL;
-DirectoryEntry *cwd = NULL;
+DirectoryEntry *currentDir = NULL;
+char * cwd = NULL;
 
 
 int loadRootDirectory() {
+    printf("[loadRootDirectory] Loading root directory.\n");
     int minBytesNeeded = 16 * sizeof(DirectoryEntry);
     int blocksNeeded = (minBytesNeeded + 512 - 1) / 512;
     int mallocBytes = blocksNeeded * 512;
@@ -52,18 +54,25 @@ int loadRootDirectory() {
         return -1;
     }
 
-    // Set the current working directory to root
-    cwd = strdup("/");  // Ensure cwd is dynamically allocated
-    if (cwd == NULL) {
-        fprintf(stderr, "[LOAD ROOT] Failed to allocate memory for cwd\n");
-        free(rootDir);
-        return -1;
-    }
+    currentDir = rootDir; // Now cwd points to the root directory
 
+    // Set the current working directory to root
+    // cwd = strdup("/");  // Ensure cwd is dynamically allocated
+    // if (cwd == NULL) {
+    //     fprintf(stderr, "[LOAD ROOT] Failed to allocate memory for cwd\n");
+    //     free(rootDir);
+    //     return -1;
+    // }
+    cwd = malloc(MAX_NAME_LENGTH);
+    cwd[0] = '/';
+        cwd[1] = '\0';
+	currentDir = rootDir;
+    printf("[loadRootDirectory] Root directory loaded. Start block: %d\n", startBlock);
     return 0;  // Successful loading of root directory
 }
 
 DirectoryEntry* initDirectory(int defaultEntries, DirectoryEntry *dirEntry, DirectoryEntry *parent, char* name) {
+        printf("[initDirectory] Initializing directory: Name: '%s', Default Entries: %d\n", name, defaultEntries);
     // Calculate bytes needed based on the number of default entries and their size
     int bytesNeeded = defaultEntries * sizeof(DirectoryEntry);
 
@@ -126,6 +135,7 @@ DirectoryEntry* initDirectory(int defaultEntries, DirectoryEntry *dirEntry, Dire
     }
 
     // Return the directory entry array
+        printf("[initDirectory] Directory initialized: '%s', Start Block: %u\n", name, startBlock);
     return dir;
 }
 

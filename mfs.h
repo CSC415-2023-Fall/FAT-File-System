@@ -1,9 +1,10 @@
 /**************************************************************
-* Class:  CSC-415
-* Name: Professor Bierman
-* Student ID: N/A
+* Class:  CSC-415-03 Fall 2021
+* Names: Amandeep Singh, Akshat Sohal 
+* Student IDs: 921287533, 917815046
+* GitHub Name: Amandeep-Singh-24, sohal786
+* Group Name: Tryhards
 * Project: Basic File System
-*
 * File: mfs.h
 *
 * Description: 
@@ -66,7 +67,8 @@ typedef struct  {
 } ppinfo;
 
  extern DirectoryEntry *rootDir;
- extern DirectoryEntry *cwd;
+ extern DirectoryEntry *currentDir;
+ extern char *cwd;
 
 // Key directory functions
 int fs_mkdir(const char *pathname, mode_t mode);
@@ -99,6 +101,7 @@ struct fs_stat
     };
 
 int fs_stat(const char *path, struct fs_stat *buf);
+int readDirectoryFromDisk(uint32_t startBlock, DirectoryEntry *dir, int numEntries);
 
 int mk_file(char* filename);//this makes the file 
 int readDirectoryFromDisk(uint32_t startBlock, DirectoryEntry *dir, int numEntries);
