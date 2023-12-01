@@ -98,7 +98,7 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 	
 	struct fs_diriteminfo * di;
 	struct fs_stat statbuf;
-	printf("[fs_readdir] Called\n");
+	
 	di = fs_readdir (dirp);
 	printf("\n");
 	while (di != NULL) 
@@ -407,15 +407,12 @@ int cmd_rm (int argcnt, char *argvec[])
 	char * path = argvec[1];	
 	
 	//must determine if file or directory
-	printf("before shell is_Dir if statement");
 	if (fs_isDir (path))
 		{
-			printf("this is flag that shell calls is_dir");
 		return (fs_rmdir (path));
 		}		
 	if (fs_isFile (path))
 		{
-			printf("this is flag that shell calls is_File");
 		return (fs_delete(path));
 		}	
 		
