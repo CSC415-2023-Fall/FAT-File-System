@@ -1,15 +1,16 @@
 /**************************************************************
-* Class:  CSC-415
-* Name: Professor Bierman
-* Student ID: N/A
+* Class:  CSC-415-03 Fall 2021
+* Names: Amandeep Singh, Akshat Sohal, Conrad Choi 
+* Student IDs: 921287533, 917815046, 911679059
+* GitHub Name: Amandeep-Singh-24, sohal786, ChoiConrad
+* Group Name: Tryhards
 * Project: Basic File System
 *
-* File: mfs.h
+* File: fsInit.c
 *
-* Description: 
-*   This is the file system interface.
-*   This is the interface needed by the driver to interact with
-*   your filesystem.
+* Description: Implementations of all file functions which 
+* allows for fsshell.c to run properly. This is the driver
+* for the file functions in shell.
 *
 **************************************************************/
 #ifndef _MFS_H

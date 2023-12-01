@@ -1,3 +1,14 @@
+/**
+Class: CSC-415-03 Fall 2023
+Name: Conrad Choi
+Student ID: 911679059
+GitHub Name: ChoiConrad
+Project: File System Project
+*
+* File: freespace.h
+*
+* Description: Main file for managing free space in the file system.
+**/
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -121,7 +132,7 @@ uint32_t findNextFreeBlock() {
     }
 
     // Add diagnostic print
-    printf("findNextFreeBlock: Checking FAT entries... (vcb->table_size: %u)\n", vcb->table_size);
+    printf("findNextFreeBlock: Checking FAT entries... (vcb->table_size: %lu)\n", vcb->table_size);
     for (uint32_t i = 0; i < vcb->table_size && i < 10; i++) { // print first 10 entries for check
         printf("FAT Entry %u: status = %d, nextBlock = %u\n", i, fatTable[i].status, fatTable[i].nextBlock);
     }

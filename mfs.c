@@ -1,3 +1,18 @@
+/**************************************************************
+* Class:  CSC-415-03 Fall 2021
+* Names: Amandeep Singh, Akshat Sohal, Conrad Choi 
+* Student IDs: 921287533, 917815046, 911679059
+* GitHub Name: Amandeep-Singh-24, sohal786, ChoiConrad
+* Group Name: Tryhards
+* Project: Basic File System
+*
+* File: fsInit.c
+*
+* Description: Implementations of all file functions which 
+* allows for fsshell.c to run properly. This is the driver
+* for the file functions in shell.
+*
+**************************************************************/
 #include <stdlib.h> 
 #include <string.h> 
 #include <sys/types.h>
@@ -9,6 +24,16 @@ extern DirectoryEntry *rootDir;
 extern DirectoryEntry *cwd;
 // extern struct FATEntry *fatTable;
 
+/**
+ * This function checks if a given directory entry is a directory.
+ * It takes a pointer to a DirectoryEntry and returns 1 if it's a directory,
+ * otherwise returns 0.
+ *
+ * @param dirEntry - Pointer to a DirectoryEntry to be checked.
+ * 
+ * @return int - Returns 1 if dirEntry is a directory, 0 otherwise.
+ * 
+ */
 int IsADirectory(DirectoryEntry *dirEntry) {
     printf("[IsADirectory] Called\n");
     if (dirEntry == NULL) {
@@ -21,6 +46,15 @@ int IsADirectory(DirectoryEntry *dirEntry) {
     return dirEntry->isDirectory == 1;
 }
 
+/**
+ * This function writes a directory to the disk. It takes a pointer to the directory
+ * to be written and the start block number, then writes the directory to the disk.
+ *
+ * @param dir - Pointer to the directory to be written.
+ * 
+ * @return int - Returns 0 on success, -1 on failure.
+ * 
+ */
 int writeDirectoryToDisk(DirectoryEntry *dir/*, uint32_t startBlock, int numEntries*/) {
     uint32_t startBlock;
     startBlock = dir[0].location;
@@ -44,6 +78,20 @@ int writeDirectoryToDisk(DirectoryEntry *dir/*, uint32_t startBlock, int numEntr
     return 0;
 }
 
+/**
+ * This function reads a directory from the disk. It takes the start block number
+ * and a pointer to a buffer to store the read directory, then reads the directory
+ * from the disk into the buffer.
+ *
+ * @param startBlock - The start block number on disk where the directory is stored.
+ * 
+ * @param dir - Pointer to the buffer to store the read directory.
+ * 
+ * @param numEntries - Number of entries in the directory.
+ * 
+ * @return int - Returns 0 on success, -1 on failure.
+ * 
+ */
 int readDirectoryFromDisk(uint32_t startBlock, DirectoryEntry *dir, int numEntries) {
     printf("[readDirectoryFromDisk] Called with startBlock: %u, numEntries: %d\n", startBlock, numEntries);
     if (dir == NULL) {
@@ -65,6 +113,17 @@ int readDirectoryFromDisk(uint32_t startBlock, DirectoryEntry *dir, int numEntri
     return 0;
 }
 
+/**
+ * This function finds an entry in a directory. It searches for a token
+ * in the parent directory and returns its index if found.
+ *
+ * @param parent - Pointer to the parent directory where the search is performed.
+ * 
+ * @param token - The name of the entry to be searched.
+ * 
+ * @return int - Returns the index of the found entry, or -1 if not found.
+ * 
+ */
 int FindEntryInDir(DirectoryEntry *parent, char *token) {
     printf("[FindEntryInDir] Searching for token: '%s'\n", token);
     if (parent == NULL || token == NULL) {
@@ -83,6 +142,15 @@ int FindEntryInDir(DirectoryEntry *parent, char *token) {
     return -1;  
 }
 
+/**
+ * This function loads a directory from disk. It takes a DirectoryEntry struct
+ * and loads the directory from the disk based on the location specified in the struct.
+ *
+ * @param dir - The DirectoryEntry struct that contains the location of the directory.
+ * 
+ * @return DirectoryEntry* - Returns a pointer to the loaded directory, or NULL on failure.
+ * 
+ */
 DirectoryEntry *loadDirectory(DirectoryEntry dir) {
     printf("[loadDirectory] Called for directory with location: %lu\n", dir.location);
 
@@ -102,7 +170,17 @@ DirectoryEntry *loadDirectory(DirectoryEntry dir) {
     }
     return entry;
 }
-
+/**
+ * This function parses a file path and fills a ppinfo struct with the parsed information.
+ * It analyzes the given path and updates the ppinfo structure accordingly.
+ *
+ * @param path - The file path to be parsed.
+ * 
+ * @param ppi - Pointer to the ppinfo struct to be filled with parsed path information.
+ * 
+ * @return int - Returns 0 on successful parsing, otherwise returns an error code.
+ * 
+ */
 int ParsePath(const char *path, ppinfo *ppi) {
     printf("[ParsePath] Called with path: '%s'\n", path);
     if (path == NULL || ppi == NULL) {
@@ -178,6 +256,15 @@ int ParsePath(const char *path, ppinfo *ppi) {
     return -1; // Should not reach here
 }
 
+/**
+ * This function finds an empty entry in a directory. It searches for an empty
+ * space in the given directory and returns the index of the first empty entry found.
+ *
+ * @param directory - Pointer to the directory where the search is performed.
+ * 
+ * @return int - Returns the index of the first empty entry, or -1 if no empty entry is found.
+ * 
+ */
 int findEmptyEntry(DirectoryEntry *directory) {
     printf("[findEmptyEntry] Called\n");
     if (directory == NULL) {
@@ -196,6 +283,17 @@ int findEmptyEntry(DirectoryEntry *directory) {
     return -1;
 }
 
+/**
+ * This function creates a new directory with the specified pathname and mode.
+ * It checks for the validity of the path and creates a new directory entry in the file system.
+ *
+ * @param pathname - The path where the new directory is to be created.
+ * 
+ * @param mode - The mode of the new directory.
+ * 
+ * @return int - Returns 0 on successful creation, -1 on failure.
+ * 
+ */
 int fs_mkdir(const char *pathname, mode_t mode) {
     printf("[MKDIR] Called with pathname: '%s'\n", pathname);
 
@@ -263,6 +361,14 @@ int fs_mkdir(const char *pathname, mode_t mode) {
     return 0;
 }
 
+/**
+ * Checks if the path refers to a directory. 
+ *
+ * @param pathname - A pointer to a string containing the path to check.
+ * 
+ * @return int - Returns 1 if the path refers to a directory, 0 otherwise.
+ * 
+ */
 int fs_isDir(const char *pathname) {
     if (pathname == NULL) {
         printf("[IS DIR] Pathname is NULL\n");
@@ -287,7 +393,14 @@ int fs_isDir(const char *pathname) {
 }
 }
 
-
+/**
+ * Opens a directory stream corresponding to the directory name, and returns a pointer to the directory stream.
+ *
+ * @param pathname - A pointer to a string containing the name of the directory to be opened.
+ * 
+ * @return fdDir* - Returns a pointer to the opened directory stream, or NULL on error.
+ * 
+ */
 fdDir *fs_opendir(const char *pathname) {
         printf("[fs_opendir] Called with pathname: %s\n", pathname);
     // Check if the pathname is a directory
@@ -316,7 +429,14 @@ fdDir *fs_opendir(const char *pathname) {
 }
 
 
-
+/**
+ * Reads a directory entry from the directory stream pointed to by dirp.
+ *
+ * @param dirp - A pointer to the directory stream.
+ * 
+ * @return struct fs_diriteminfo* - Returns a pointer to a directory entry, or NULL on reaching the end of the directory or on error.
+ * 
+ */
 struct fs_diriteminfo *fs_readdir(fdDir *dirp) {
         printf("[fs_readdir] Called\n");
     if (dirp == NULL || dirp->directory == NULL) {
@@ -336,7 +456,14 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp) {
     return NULL;
 }
 
-
+/**
+ * Closes the directory stream associated with dirp.
+ *
+ * @param dirp - A pointer to the directory stream.
+ * 
+ * @return int - Returns 0 on success, or -1 on failure.
+ * 
+ */
 int fs_closedir(fdDir *dirp) {
         printf("[fs_closedir] Called\n");
     if (dirp != NULL) {
@@ -349,7 +476,14 @@ int fs_closedir(fdDir *dirp) {
     return -1;
 }
 
-
+/**
+ * Checks if the path refers to a file.
+ *
+ * @param pathname - A pointer to a string containing the path to check.
+ * 
+ * @return int - Returns 1 if the path refers to a file, 0 otherwise.
+ * 
+ */
 int fs_isFile(char *pathname) {
     if (pathname == NULL) {
         printf("[IS FILE] Pathname is NULL\n");
@@ -374,6 +508,16 @@ int fs_isFile(char *pathname) {
     }
 }
 
+/**
+ * Retrieves the current working directory and stores it in the buffer pointed to by buf.
+ *
+ * @param buf - A pointer to a buffer where the current working directory will be stored.
+ * 
+ * @param size - The size of the buffer.
+ * 
+ * @return char* - Returns a pointer to buf on success, or NULL on failure.
+ * 
+ */
 char* fs_getcwd(char* buf, size_t size) {
     if (cwd == NULL) {
         return NULL;
@@ -388,6 +532,14 @@ char* fs_getcwd(char* buf, size_t size) {
     return buf;
 }
 
+/**
+ * Changes the current working directory to that specified in path.
+ *
+ * @param path - A pointer to a string containing the path of the new working directory.
+ * 
+ * @return int - Returns 0 on success, or -1 on failure.
+ * 
+ */
 int fs_setcwd(char* path) {
     if (path == NULL) {
         return -1;
@@ -409,6 +561,16 @@ int fs_setcwd(char* path) {
     return 0;
 }
 
+/**
+ * Obtains information about the file or directory at the specified path.
+ *
+ * @param path - A pointer to a string containing the path to check.
+ * 
+ * @param buf - A pointer to a struct fs_stat where the information is to be stored.
+ * 
+ * @return int - Returns 0 on success, or -1 on failure.
+ * 
+ */
 int fs_stat(const char* path, struct fs_stat* buf) {
     if (path == NULL || buf == NULL) {
         return -1;
@@ -431,6 +593,14 @@ int fs_stat(const char* path, struct fs_stat* buf) {
     return 0;
 }
 
+/**
+ * Deletes the file specified by filename.
+ *
+ * @param filename - A pointer to a string containing the name of the file to be deleted.
+ * 
+ * @return int - Returns 0 on success, or -1 on failure.
+ * 
+ */
 int fs_delete(char *filename) {
     // Check if filename is NULL
     if (filename == NULL) {
@@ -475,6 +645,14 @@ int fs_delete(char *filename) {
     return 0;
 }
 
+/**
+ * Removes the directory specified by pathname.
+ *
+ * @param pathname - A pointer to a string containing the path of the directory to be removed.
+ * 
+ * @return int - Returns 0 on success, or -1 on failure.
+ * 
+ */
 int fs_rmdir(const char *pathname) {
     // Check if the pathname is NULL
     if (pathname == NULL) {
