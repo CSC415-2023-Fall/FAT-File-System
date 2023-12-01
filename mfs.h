@@ -81,9 +81,9 @@ int fs_closedir(fdDir *dirp);
 char * fs_getcwd(char *pathname, size_t size);
 int fs_setcwd(char *pathname);   //linux chdir
 int fs_isFile(char * filename); //return 1 if file, 0 otherwise
-int fs_isDir(char * pathname);      //return 1 if directory, 0 otherwise
+int fs_isDir(const char * pathname);      //return 1 if directory, 0 otherwise
 int fs_delete(char* filename);  //removes a file
-
+int ParsePath(const char *path, ppinfo *ppi);
 
 // This is the strucutre that is filled in from a call to fs_stat
 struct fs_stat
@@ -100,7 +100,7 @@ struct fs_stat
 
 int fs_stat(const char *path, struct fs_stat *buf);
 
-
-
+int mk_file(char* filename);//this makes the file 
+int readDirectoryFromDisk(uint32_t startBlock, DirectoryEntry *dir, int numEntries);
 #endif
 

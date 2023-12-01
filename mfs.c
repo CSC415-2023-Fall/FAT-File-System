@@ -5,6 +5,8 @@
 #include "fsInit.h"
 #include "mfs.h"
 extern struct volume_control_block *vcb;
+extern DirectoryEntry *rootDir;
+extern DirectoryEntry *cwd;
 // extern struct FATEntry *fatTable;
 
 int IsADirectory(DirectoryEntry *dirEntry) {
@@ -82,7 +84,7 @@ int FindEntryInDir(DirectoryEntry *parent, char *token) {
 }
 
 DirectoryEntry *loadDirectory(DirectoryEntry dir) {
-    printf("[loadDirectory] Called for directory with location: %llu\n", dir.location);
+    printf("[loadDirectory] Called for directory with location: %lu\n", dir.location);
 
     int block_size = vcb->block_size; 
     int blocks_need = (dir.file_size + block_size - 1) / block_size;
@@ -101,7 +103,7 @@ DirectoryEntry *loadDirectory(DirectoryEntry dir) {
     return entry;
 }
 
-int ParsePath(char *path, ppinfo *ppi) {
+int ParsePath(const char *path, ppinfo *ppi) {
     printf("[ParsePath] Called with path: '%s'\n", path);
     if (path == NULL || ppi == NULL) {
         printf("[ParsePath] path or ppi is NULL\n");
@@ -261,7 +263,7 @@ int fs_mkdir(const char *pathname, mode_t mode) {
     return 0;
 }
 
-int fs_isDir(char *pathname) {
+int fs_isDir(const char *pathname) {
     if (pathname == NULL) {
         printf("[IS DIR] Pathname is NULL\n");
         return 0; // 0 indicates not a directory
@@ -523,5 +525,69 @@ int fs_rmdir(const char *pathname) {
     }
 
     printf("[RMDIR] Directory %s removed successfully\n", pathname);
+    return 0;
+}
+
+
+int mk_file(char *filename) {
+    if (filename == NULL) {
+        printf("mk_file: Filename is NULL\n");
+        return -1;
+    }
+
+    // check cwd is set, set it to rootDir if not
+    if (cwd == NULL) {
+        printf("mk_file: Current Working Directory is not set. Defaulting to root directory.\n");
+        if (rootDir == NULL) {
+            printf("mk_file: Root directory is also NULL. Cannot proceed.\n");
+            return -1;
+        }
+        cwd = rootDir;
+    }
+
+    // Parse the path to find the parent directory and the new file's name
+    ppinfo ppi;
+    if (ParsePath(filename, &ppi) != 0) {
+        printf("mk_file: Error parsing path '%s'\n", filename);
+        return -1;
+    }
+
+    // Check if the file already exists
+    if (ppi.index != -1) {
+        printf("mk_file: File '%s' already exists\n", filename);
+        return -1;
+    }
+
+    // Check if the parent directory is valid
+    if (ppi.parent == NULL) {
+        printf("mk_file: Parent directory is invalid\n");
+        return -1;
+    }
+
+    // Create a new file entry and initializing the details 
+    DirectoryEntry newFile;
+    memset(&newFile, 0, sizeof(DirectoryEntry));
+    strncpy(newFile.file_name, ppi.lastElement, MAX_FILE_NAME_LENGTH - 1);
+    newFile.file_size = 0; // Initial size is 0
+    newFile.isDirectory = 0; // It's a file
+    
+
+    // Find an empty entry in the parent directory
+    int emptyIndex = findEmptyEntry(ppi.parent);
+    if (emptyIndex == -1) {
+        printf("mk_file: No space in parent directory for '%s'\n", filename);
+        return -1;
+    }
+
+    // Update the parent directory
+    ppi.parent[emptyIndex] = newFile;
+
+    // Write the updated directory to disk
+    if (writeDirectoryToDisk(ppi.parent) != 0) {
+        printf("mk_file: Failed to write updated parent directory to disk\n");
+        return -1;
+    }
+
+    printf("mk_file: File '%s' created successfully\n", filename);
     return 0;
 }
